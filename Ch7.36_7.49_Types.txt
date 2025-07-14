@@ -1,0 +1,195 @@
+# OCPP 1.6 Types Reference (Sections 7.36-7.49)
+
+## 7.36. Reason
+
+**Type:** Enumeration
+
+**Description:** Reason for stopping a transaction in StopTransaction.req.
+
+| Value | Description |
+|-------|-------------|
+| DeAuthorized | The transaction was stopped because of the authorization status in a StartTransaction.conf |
+| EmergencyStop | Emergency stop button was used. |
+| EVDisconnected | Disconnecting of cable, vehicle moved away from inductive charge unit. |
+| HardReset | A hard reset command was received. |
+| Local | Stopped locally on request of the user at the Charge Point. This is a regular termination of a transaction. Examples: presenting an RFID tag, pressing a button to stop. |
+| Other | Any other reason. |
+| PowerLoss | Complete loss of power. |
+| Reboot | A locally initiated reset/reboot occurred. (for instance watchdog kicked in) |
+| Remote | Stopped remotely on request of the user. This is a regular termination of a transaction. Examples: termination using a smartphone app, exceeding a (non local) prepaid credit. |
+| SoftReset | A soft reset command was received. |
+| UnlockCommand | Central System sent an Unlock Connector command. |
+
+## 7.37. RecurrencyKindType
+
+**Type:** Enumeration
+
+**Description:** Type of recurrence of a charging profile, as used in ChargingProfile.
+
+| Value | Description |
+|-------|-------------|
+| Daily | The schedule restarts every 24 hours, at the same time as in the startSchedule. |
+| Weekly | The schedule restarts every 7 days, at the same time and day-of-the-week as in the startSchedule. |
+
+## 7.38. RegistrationStatus
+
+**Type:** Enumeration
+
+**Description:** Result of registration in response to BootNotification.req.
+
+| Value | Description |
+|-------|-------------|
+| Accepted | Charge point is accepted by Central System. |
+| Pending | Central System is not yet ready to accept the Charge Point. Central System may send messages to retrieve information or prepare the Charge Point. |
+| Rejected | Charge point is not accepted by Central System. This may happen when the Charge Point id is not known by Central System. |
+
+## 7.39. RemoteStartStopStatus
+
+**Type:** Enumeration
+
+**Description:** The result of a RemoteStartTransaction.req or RemoteStopTransaction.req request.
+
+| Value | Description |
+|-------|-------------|
+| Accepted | Command will be executed. |
+| Rejected | Command will not be executed. |
+
+## 7.40. ReservationStatus
+
+**Type:** Enumeration
+
+**Description:** Status in ReserveNow.conf.
+
+| Value | Description |
+|-------|-------------|
+| Accepted | Reservation has been made. |
+| Faulted | Reservation has not been made, because connectors or specified connector are in a faulted state. |
+| Occupied | Reservation has not been made. All connectors or the specified connector are occupied. |
+| Rejected | Reservation has not been made. Charge Point is not configured to accept reservations. |
+| Unavailable | Reservation has not been made, because connectors or specified connector are in an unavailable state. |
+
+## 7.41. ResetStatus
+
+**Type:** Enumeration
+
+**Description:** Result of Reset.req.
+
+| Value | Description |
+|-------|-------------|
+| Accepted | Command will be executed. |
+| Rejected | Command will not be executed. |
+
+## 7.42. ResetType
+
+**Type:** Enumeration
+
+**Description:** Type of reset requested by Reset.req.
+
+| Value | Description |
+|-------|-------------|
+| Hard | Restart (all) the hardware, the Charge Point is not required to gracefully stop ongoing transaction. If possible the Charge Point sends a StopTransaction.req for previously ongoing transactions after having restarted and having been accepted by the Central System via a BootNotification.conf. This is a last resort solution for a not correctly functioning Charge Point, by sending a "hard" reset, (queued) information might get lost. |
+| Soft | Stop ongoing transactions gracefully and sending StopTransaction.req for every ongoing transaction. It should then restart the application software (if possible, otherwise restart the processor/controller). |
+
+## 7.43. SampledValue
+
+**Type:** Class
+
+**Description:** Single sampled value in MeterValues. Each value can be accompanied by optional fields.
+
+| Field Name | Field Type | Cardinality | Description |
+|------------|------------|-------------|-------------|
+| value | String | 1..1 | Required. Value as a "Raw" (decimal) number or "SignedData". Field Type is "string" to allow for digitally signed data readings. Decimal numeric values are also acceptable to allow fractional values for measurands such as Temperature and Current. |
+| context | ReadingContext | 0..1 | Optional. Type of detail value: start, end or sample. Default = "Sample.Periodic" |
+| format | ValueFormat | 0..1 | Optional. Raw or signed data. Default = "Raw" |
+| measurand | Measurand | 0..1 | Optional. Type of measurement. Default = "Energy.Active.Import.Register" |
+| phase | Phase | 0..1 | Optional. indicates how the measured value is to be interpreted. For instance between L1 and neutral (L1-N) Please note that not all values of phase are applicable to all Measurands. When phase is absent, the measured value is interpreted as an overall value. |
+| location | Location | 0..1 | Optional. Location of measurement. Default="Outlet" |
+| unit | UnitOfMeasure | 0..1 | Optional. Unit of the value. Default = "Wh" if the (default) measurand is an "Energy" type. |
+
+## 7.44. TriggerMessageStatus
+
+**Type:** Enumeration
+
+**Description:** Status in TriggerMessage.conf.
+
+| Value | Description |
+|-------|-------------|
+| Accepted | Requested notification will be sent. |
+| Rejected | Requested notification will not be sent. |
+| NotImplemented | Requested notification cannot be sent because it is either not implemented or unknown. |
+
+## 7.45. UnitOfMeasure
+
+**Type:** Enumeration
+
+**Description:** Allowable values of the optional "unit" field of a Value element, as used in SampledValue. Default value of "unit" is always "Wh".
+
+| Value | Description |
+|-------|-------------|
+| Wh | Watt-hours (energy). Default. |
+| kWh | kiloWatt-hours (energy). |
+| varh | Var-hours (reactive energy). |
+| kvarh | kilovar-hours (reactive energy). |
+| W | Watts (power). |
+| kW | kilowatts (power). |
+| VA | VoltAmpere (apparent power). |
+| kVA | kiloVolt Ampere (apparent power). |
+| var | Vars (reactive power). |
+| kvar | kilovars (reactive power). |
+| A | Amperes (current). |
+| V | Voltage (r.m.s. AC). |
+| Celsius | Degrees (temperature). |
+| Fahrenheit | Degrees (temperature). |
+| K | Degrees Kelvin (temperature). |
+| Percent | Percentage. |
+
+## 7.46. UnlockStatus
+
+**Type:** Enumeration
+
+**Description:** Status in response to UnlockConnector.req.
+
+| Value | Description |
+|-------|-------------|
+| Unlocked | Connector has successfully been unlocked. |
+| UnlockFailed | Failed to unlock the connector: The Charge Point has tried to unlock the connector and has detected that the connector is still locked or the unlock mechanism failed. |
+| NotSupported | Charge Point has no connector lock, or ConnectorId is unknown. |
+
+## 7.47. UpdateStatus
+
+**Type:** Enumeration
+
+**Description:** Type of update for a SendLocalList.req.
+
+| Value | Description |
+|-------|-------------|
+| Accepted | Local Authorization List successfully updated. |
+| Failed | Failed to update the Local Authorization List. |
+| NotSupported | Update of Local Authorization List is not supported by Charge Point. |
+| VersionMismatch | Version number in the request for a differential update is less or equal then version number of current list. |
+
+## 7.48. UpdateType
+
+**Type:** Enumeration
+
+**Description:** Type of update for a SendLocalList.req.
+
+| Value | Description |
+|-------|-------------|
+| Differential | Indicates that the current Local Authorization List must be updated with the values in this message. |
+| Full | Indicates that the current Local Authorization List must be replaced by the values in this message. |
+
+## 7.49. ValueFormat
+
+**Type:** Enumeration
+
+**Description:** Format that specifies how the value element in SampledValue is to be interpreted.
+
+| Value | Description |
+|-------|-------------|
+| Raw | Data is to be interpreted as integer/decimal numeric data. |
+| SignedData | Data is represented as a signed binary data block, encoded as hex data. |
+
+---
+
+**Section Complete:** This completes the conversion of sections 7.36 through 7.49 of the OCPP 1.6 specification. Please indicate which section you would like me to convert next.

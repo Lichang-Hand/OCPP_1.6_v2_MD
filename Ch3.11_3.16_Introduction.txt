@@ -1,0 +1,184 @@
+# 3. Introduction (Continued)
+
+## 3.11. Reservations
+
+This section is informative.
+
+Reservation of a Charge Point is possible using the Reserve Now operation. This operation reserves the Charge Point until a certain expiry time for a specific idTag. A parent idTag may be included in the reservation to support group reservations. It is possible to reserve a specific connector on a Charge Point or to reserve any connector on a Charge Point. A reservation is released when the reserved idTag is used on the reserved connector (when specified) or on any connector (when unspecified) or when the expiry time is reached or when the reservation is explicitly canceled.
+
+## 3.12. Vendor-specific data transfer
+
+This section is informative.
+
+The mechanism of vendor-specific data transfer allows for the exchange of data or messages not standardized in OCPP. As such, it offers a framework within OCPP for experimental functionality that may find its way into future OCPP versions. Experimenting can be done without creating new possibly incompatible OCPP dialects. Secondly, it offers a possibility to implement additional functionality agreed upon between specific Central System and Charge Point vendors.
+
+The operation Vendor Specific Data MAY be initiated either by the Central System or by the Charge Point.
+
+> **Important:** Please use with extreme caution and only for optional functionality, since it will impact your compatibility with other systems that do not make use of this option. We recommend mentioning the usage explicitly in your documentation and/or communication. Please consider consulting the Open Charge Alliance before turning to this option to add functionality.
+
+## 3.13. Smart Charging
+
+This section is normative.
+
+With Smart Charging a Central System gains the ability to influence the charging power or current of a specific EV, or the total allowed energy consumption on an entire Charge Point or a group of Charge Points, for instance, based on a grid connection, energy availability on the grid or the wiring of a building. Influencing the charge power or current is based on energy transfer limits at specific points in time. Those limits are combined in a Charging Profile.
+
+### 3.13.1. Charging profile purposes
+
+A charging profile consists of a charging schedule, which is basically a list of time intervals with their maximum charge power or current, and some values to specify the time period and recurrence of the schedule.
+
+There are three different types of charging profiles, depending on their purpose:
+
+**ChargePointMaxProfile**
+In load balancing scenarios, the Charge Point has one or more local charging profiles that limit the power or current to be shared by all connectors of the Charge Point. The Central System SHALL configure such a profile with ChargingProfilePurpose set to "ChargePointMaxProfile". ChargePointMaxProfile can only be set at Charge Point ConnectorId 0.
+
+**TxDefaultProfile**
+Default schedules for new transactions MAY be used to impose charging policies. An example could be a policy that prevents charging during the day. For schedules of this purpose, ChargingProfilePurpose SHALL be set to TxDefaultProfile.
+
+If TxDefaultProfile is set to ConnectorId 0, the TxDefaultProfile is applicable to all Connectors. If ConnectorId is set greater than 0, it only applies to that specific connector.
+
+In the event a TxDefaultProfile for connector 0 is installed, and the Central System sends a new profile with ConnectorId greater than 0, the TxDefaultProfile SHALL be replaced only for that specific connector.
+
+When an new or updated TxDefaultProfile is received and a transaction is ongoing that is not using a ChargingProfile or using the current TxDefaultProfile, the transaction SHALL continue, but switch to using the new or updated TxDefaultProfile.
+
+When TxDefaultProfile is removed, then running transactions, that started with that profile, SHALL continue without a TxDefaultProfile.
+
+**TxProfile**
+If a transaction-specific profile with purpose TxProfile is present, it SHALL overrule the default charging profile with purpose TxDefaultProfile for the duration of the current transaction only. After the transaction is stopped, the profile SHOULD be deleted. If there is no transaction active on the connector specified in a charging profile of type TxProfile, then the Charge Point SHALL discard it and return an error status in SetChargingProfile.conf.
+
+The final schedule constraints that apply to a transaction are determined by merging the profiles with purposes ChargePointMaxProfile with the profile TxProfile or the TxDefaultProfile in case no profile of purpose TxProfile is provided. TxProfile SHALL only be set at Charge Point ConnectorId greater than 0.
+
+### 3.13.2. Stacking charging profiles
+
+It is allowed to stack charging profiles of the same charging profile purpose in order to describe complex calendars. For example, one can define a charging profile of purpose TxDefaultProfile with a duration and recurrence of one week that allows full power or current charging on weekdays from 23:00h to 06:00h and from 00:00h to 24:00h in weekends and reduced power or current charging at other times. On top of that, one can define other TxDefaultProfiles that define exception to this rule, for example for holidays.
+
+Precedence of charging profiles is determined by the value of their StackLevel parameter. At any point in time the prevailing charging profile SHALL be the charging profile with the highest stackLevel among the profiles that are valid at that point in time, as determined by their validFrom and validTo parameters.
+
+To avoid conflicts, the existence of multiple Charging Profiles with the same stackLevel and Purposes in a Charge Point is not allowed. Whenever a Charge Point receives a Charging Profile with a stackLevel and Purpose that already exists in the Charge Point, the Charge Point SHALL replace the existing profile.
+
+> **Important:** In the case an updated charging profile (with the same stackLevel and purpose) is sent with a validFrom dateTime in the future, the Charge Point SHALL replace the installed profile and SHALL revert to default behavior until validFrom is reached. It is RECOMMENDED to provide a start time in the past to prevent gaps.
+
+> **Warning:** If you use Stacking without a duration, on the highest stack level, the Charge Point will never fall back to a lower stack level profile.
+
+### 3.13.3. Combining charging profile purposes
+
+The Composite Schedule that will guide the charging level is a combination of the prevailing Charging Profiles of the different chargingProfilePurposes.
+
+This Composite Schedule is calculated by taking the minimum value for each time interval. Note that time intervals do not have to be of fixed length, nor do they have to be the same for every charging profile purpose. This means that a resulting Composite Schedule MAY contain intervals of different lengths.
+
+At any point in time, the available power or current in the Composite Schedule, which is the result of merging the schedules of charging profiles ChargePointMaxProfile and TxDefaultProfile (or TxProfile), SHALL be less than or equal to lowest value of available power or current in any of the merged schedules.
+
+In the case the Charge Point is equipped with more than one Connector, the limit value of ChargePointMaxProfile is the limit for all connectors combined. The combined energy flow of all connectors SHALL NOT be greater then the limit set by ChargePointMaxProfile.
+
+### 3.13.4. Smart Charging Use Cases
+
+This section is informative.
+
+There may be many different uses for smart charging. The following three typical kinds of smart charging will be used to illustrate the possible behavior of smart charging: Load balancing, Central smart charging, and Local smart charging.
+
+There are more complex use cases possible in which two or more of the above use cases are combined into one more complex system.
+
+**Load Balancing**
+The Load Balancing use case is about internal load balancing within the Charge Point, where the Charge Point controls the charging schedule per connector. The Charge Point is configured with a fixed limit, for example the maximum current of the connection to the grid.
+
+The optional charging schedule field minChargingRate may be used by the Charge Point to optimize the power distribution between the connectors. The parameter informs the Charge Point that charging below minChargingRate is inefficient, giving the possibility to select another balancing strategy.
+
+**Central Smart Charging**
+With Central smart charging the constraints on the charging schedule, per transaction, are determined by the Central System. The Central System uses these schedules to stay within limits imposed by any external system. The Central System directly controls the limits on the connectors of the Charge Points.
+
+Central smart charging assumes that charge limits are controlled by the Central System. The Central System receives a capacity forecast from the grid operator (DSO) or another source in one form or another and calculates charging schedules for some or all charging transactions, details of which are out of scope of this specification.
+
+**Local Smart Charging**
+The Local Smart Charging use case describes a use case in which smart charging enabled Charge Points have charging limits controlled locally by a Local Controller, not the Central System. The use case for local smart charging is about limiting the amount of power that can be used by a group of Charge Points, to a certain maximum. A typical use would be a number of Charge Points in a parking garage where the rating of the connection to the grid is less than the sum the ratings of the Charge Points.
+
+Local smart charging assumes the existence of a Local Controller to control a group of Charge Points. The Local Controller is a logical component. It may be implemented either as a separate physical component or as part of a master Charge Point controlling a number of other Charge Points.
+
+### 3.13.5. Discovery of Charge Point Capabilities
+
+This section is normative.
+
+The smart charging options defined can be used in extensive ways. Because of the possible limitations and differences in capabilities between Charge Points, the Central System needs to be able to discover the Charge Point specific capabilities. This is ensured by the standardized configuration keys as defined in this chapter. A Smart Charging enabled Charge Point SHALL implement, and support reporting of, the following configuration keys through the GetConfiguration.req PDU:
+
+- ChargeProfileMaxStackLevel
+- ChargingScheduleAllowedChargingRateUnit
+- ChargingScheduleMaxPeriods
+- MaxChargingProfilesInstalled
+
+### 3.13.6. Offline behavior of smart charging
+
+This section is normative.
+
+If a Charge Point goes offline after having received a transaction-specific charging profile with purpose TxProfile, then it SHALL continue to use this profile for the duration of the transaction.
+
+If a Charge Point goes offline before a transaction is started or before a transaction-specific charging profile with purpose TxProfile was received, then it SHALL use the charging profiles that are available. Zero or more of the following charging profile purposes MAY have been previously received from the Central System: ChargePointMaxProfile and TxDefaultProfile.
+
+If a Charge Point goes offline, without having any charging profiles, then it SHALL execute a transaction as if no constraints apply.
+
+## 3.14. Time zones
+
+This section is informative.
+
+OCPP does not prescribe the use of a specific time zone for time values. However, it is strongly recommended to use UTC for all time values to improve interoperability between Central Systems and Charge Points.
+
+## 3.15. Time notations
+
+This section is normative.
+
+Implementations MUST use ISO 8601 date time notation. Message receivers must be able to handle fractional seconds and time zone offsets (another implementation might use them). Message senders MAY save data usage by omitting insignificant fractions of seconds.
+
+## 3.16. Metering Data
+
+This section is normative.
+
+Extensive metering data relating to charging sessions can be recorded and transmitted in different ways depending on its intended purpose. There are two obvious use cases (but the use of meter values is not limited to these two): Charging Session Meter Values and Clock-Aligned Meter Values.
+
+Both types of meter readings MAY be reported in standalone MeterValues.req messages (during a transaction) and/or as part of the transactionData element of the StopTransaction.req PDU.
+
+### 3.16.1. Charging Session Meter Values
+
+Frequent (e.g. 1-5 minute interval) meter readings taken and transmitted (usually in "real time") to the Central System, to allow it to provide information updates to the EV user (who is usually not at the charge point), via web, app, SMS, etc., as to the progress of the charging session. In OCPP, this is called "sampled meter data", as the exact frequency and time of readings is not very significant, as long as it is "frequent enough". Sampled meter data can be configured with the following configuration keys:
+
+- MeterValuesSampledData
+- MeterValuesSampledDataMaxLength
+- MeterValueSampleInterval
+- StopTxnSampledData
+- StopTxnSampledDataMaxLength
+
+MeterValueSampleInterval is the time (in seconds) between sampling of metering (or other) data, intended to be transmitted by "MeterValues" PDUs. Samples are acquired and transmitted periodically at this interval from the start of the charging transaction.
+
+A value of "0" (numeric zero), by convention, is to be interpreted to mean that no sampled data should be transmitted.
+
+### 3.16.2. Clock-Aligned Meter Values
+
+Grid Operator might require meter readings to be taken from fiscally certified energy meters, at specific Clock aligned times (usually every quarter hour, or half hour).
+
+Clock-Aligned Billing Data can be configured with the following configuration keys:
+
+- ClockAlignedDataInterval
+- MeterValuesAlignedData
+- MeterValuesAlignedDataMaxLength
+- StopTxnAlignedData
+- StopTxnAlignedDataMaxLength
+
+ClockAlignedDataInterval is the size of the clock-aligned data interval (in seconds). This defines the set of evenly spaced meter data aggregation intervals per day, starting at 00:00:00 (midnight).
+
+For example, a value of 900 (15 minutes) indicates that every day should be broken into 96 15-minute intervals. A value of "0" (numeric zero), by convention, is to be interpreted to mean that no clock-aligned data should be transmitted.
+
+### 3.16.3. Multiple Locations/Phases
+
+When a Charge Point can measure the same measurand on multiple locations or phases, all possible locations and/or phases SHALL be reported when configured in one of the relevant configuration keys.
+
+For example: A Charge Point capable of measuring Current.Import on Inlet (all 3 phases) (grid connection) and Outlet (3 phases per connector on both its connectors). Current.Import is set in MeterValuesSampledData. MeterValueSampleInterval is set to 300 (seconds). Then the Charge Point should send a MeterValues.req with: connectorId = 0; with 3 SampledValue elements, one per phase with location = Inlet, a MeterValues.req with: connectorId = 1; with 3 SampledValue elements, one per phase with location = Outlet, and a MeterValues.req with: connectorId = 2; with 3 SampledValue elements, one per phase with location = Outlet.
+
+### 3.16.4. Unsupported measurands
+
+When a Central System sends a ChangeConfiguration.req to a Charge Point with one of the following configuration keys: MeterValuesAlignedData, MeterValuesSampledData, StopTxnAlignedData, or StopTxnSampledData, if the comma separated list contains one or more measurands that are not supported by this Charge Point, the Charge Point SHALL respond with: ChangeConfiguration.conf with: status = Rejected. No changes SHALL be made to the currently configuration.
+
+### 3.16.5. No metering data in a Stop Transaction
+
+When the configuration keys: StopTxnAlignedData and StopTxnSampledData are set to an empty string, the Charge Point SHALL not put meter values in a StopTransaction.req PDU.
+
+### 3.16.6. Start and Stop MeterValues in StopTransaction.req
+
+When the Charge Point is configured to provide metering data in the StopTransaction.req, the Charge Point is RECOMMENDED to always provide the start (Transaction.Begin) and stop (Transaction.End) values of every measurand configured.
+
+If the Charge Point has to drop meter values because it is running out of memory, it is RECOMMENDED not to drop the start and stop values.

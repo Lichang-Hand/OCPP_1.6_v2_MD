@@ -1,0 +1,207 @@
+## 6.26. GetDiagnostics.conf
+
+This section contains the field definition of the GetDiagnostics.conf PDU sent by the Charge Point to the Central System in response to a GetDiagnostics.req PDU. This response indicates whether diagnostic information is available for upload.
+
+The GetDiagnostics.conf PDU contains a single optional field named fileName of type CiString255Type with cardinality 0..1. This field contains the name of the file with diagnostic information that will be uploaded. This field is not present when no diagnostic information is available.
+
+## 6.27. GetLocalListVersion.req
+
+This section contains the field definition of the GetLocalListVersion.req PDU sent by the Central System to the Charge Point. This message requests the current version number of the Local Authorization List.
+
+The GetLocalListVersion.req PDU contains no fields, representing a simple query without parameters.
+
+## 6.28. GetLocalListVersion.conf
+
+This section contains the field definition of the GetLocalListVersion.conf PDU sent by the Charge Point to the Central System in response to a GetLocalListVersion.req PDU. This response provides the current version information for the Local Authorization List.
+
+The GetLocalListVersion.conf PDU contains a single required field named listVersion of type integer with cardinality 1..1. This field contains the current version number of the local authorization list in the Charge Point.
+
+## 6.29. Heartbeat.req
+
+This section contains the field definition of the Heartbeat.req PDU sent by the Charge Point to the Central System. This message maintains the communication link and indicates that the Charge Point remains operational.
+
+The Heartbeat.req PDU contains no fields, representing a simple keep-alive message without parameters.
+
+## 6.30. Heartbeat.conf
+
+This section contains the field definition of the Heartbeat.conf PDU sent by the Central System to the Charge Point in response to a Heartbeat.req PDU. This response provides time synchronization information.
+
+The Heartbeat.conf PDU contains a single required field named currentTime of type dateTime with cardinality 1..1. This field contains the current time of the Central System.
+
+## 6.31. MeterValues.req
+
+This section contains the field definition of the MeterValues.req PDU sent by the Charge Point to the Central System. This message transmits meter readings and other measurement data from the Charge Point.
+
+The MeterValues.req PDU contains three fields with varying requirements. The connectorId field of type integer with the constraint that connectorId must be greater than or equal to 0 has cardinality 1..1 and is required. This field contains a number greater than 0 designating a connector of the Charge Point, with 0 used to designate the main power meter.
+
+The transactionId field of type integer with cardinality 0..1 is optional and contains the transaction to which these meter samples are related. The meterValue field of type MeterValue with cardinality 1..* is required and contains the sampled meter values with timestamps.
+
+## 6.32. MeterValues.conf
+
+This section contains the field definition of the MeterValues.conf PDU sent by the Central System to the Charge Point in response to a MeterValues.req PDU. This acknowledgment confirms receipt of the meter values.
+
+The MeterValues.conf PDU contains no fields, representing a simple acknowledgment without parameters.
+
+## 6.33. RemoteStartTransaction.req
+
+This section contains the field definition of the RemoteStartTransaction.req PDU sent to the Charge Point by the Central System. This message initiates a transaction remotely.
+
+The RemoteStartTransaction.req PDU contains three fields. The connectorId field of type integer with cardinality 0..1 is optional and specifies the number of the connector on which to start the transaction, with connectorId required to be greater than 0. The idTag field of type IdToken with cardinality 1..1 is required and contains the identifier that the Charge Point must use to start a transaction.
+
+The chargingProfile field of type ChargingProfile with cardinality 0..1 is optional and contains the Charging Profile to be used by the Charge Point for the requested transaction, with ChargingProfilePurpose required to be set to TxProfile.
+
+## 6.34. RemoteStartTransaction.conf
+
+This section contains the field definition of the RemoteStartTransaction.conf PDU sent from the Charge Point to the Central System. This response indicates whether the remote start request has been accepted.
+
+The RemoteStartTransaction.conf PDU contains a single required field named status of type RemoteStartStopStatus with cardinality 1..1. This field indicates whether the Charge Point accepts the request to start a transaction.
+
+## 6.35. RemoteStopTransaction.req
+
+This section contains the field definition of the RemoteStopTransaction.req PDU sent to the Charge Point by the Central System. This message requests the termination of a specific transaction.
+
+The RemoteStopTransaction.req PDU contains a single required field named transactionId of type integer with cardinality 1..1. This field contains the identifier of the transaction which the Charge Point is requested to stop.
+
+## 6.36. RemoteStopTransaction.conf
+
+This section contains the field definition of the RemoteStopTransaction.conf PDU sent from the Charge Point to the Central System. This response indicates whether the remote stop request has been accepted.
+
+The RemoteStopTransaction.conf PDU contains a single required field named status of type RemoteStartStopStatus with cardinality 1..1. This field indicates whether the Charge Point accepts the request to stop a transaction.
+
+## 6.37. ReserveNow.req
+
+This section contains the field definition of the ReserveNow.req PDU sent by the Central System to the Charge Point. This message creates a reservation for a specific user on a designated connector.
+
+The ReserveNow.req PDU contains five fields with varying requirements. The connectorId field of type integer with the constraint that connectorId must be greater than or equal to 0 has cardinality 1..1 and is required. This field contains the identifier of the connector to be reserved, with a value of 0 meaning that the reservation is not for a specific connector.
+
+The expiryDate field of type dateTime with cardinality 1..1 is required and contains the date and time when the reservation ends. The idTag field of type IdToken with cardinality 1..1 is required and contains the identifier for which the Charge Point has to reserve a connector. The parentIdTag field of type IdToken with cardinality 0..1 is optional and contains the parent identifier. The reservationId field of type integer with cardinality 1..1 is required and contains a unique identifier for this reservation.
+
+## 6.38. ReserveNow.conf
+
+This section contains the field definition of the ReserveNow.conf PDU sent by the Charge Point to the Central System in response to a ReserveNow.req PDU. This response indicates the success or failure of the reservation request.
+
+The ReserveNow.conf PDU contains a single required field named status of type ReservationStatus with cardinality 1..1. This field indicates the success or failure of the reservation.
+
+## 6.39. Reset.req
+
+This section contains the field definition of the Reset.req PDU sent by the Central System to the Charge Point. This message requests a system reset operation.
+
+The Reset.req PDU contains a single required field named type of type ResetType with cardinality 1..1. This field contains the type of reset that the Charge Point should perform.
+
+## 6.40. Reset.conf
+
+This section contains the field definition of the Reset.conf PDU sent by the Charge Point to the Central System in response to a Reset.req PDU. This response indicates whether the reset operation will be performed.
+
+The Reset.conf PDU contains a single required field named status of type ResetStatus with cardinality 1..1. This field indicates whether the Charge Point is able to perform the reset.
+
+## 6.41. SendLocalList.req
+
+This section contains the field definition of the SendLocalList.req PDU sent by the Central System to the Charge Point. When no local authorization list is provided and the updateType is Full, all identifications are removed from the list. Requesting a Differential update without a local authorization list will have no effect on the list. All idTags in the local authorization list must be unique, with no duplicate values allowed.
+
+The SendLocalList.req PDU contains three fields. The listVersion field of type integer with cardinality 1..1 is required and contains the version number of the full list in case of a full update or the version number of the list after the update has been applied in case of a differential update. SHALL NOT be -1 or 0 as these have a special meaning in GetLocalListVersion.conf.
+
+The localAuthorizationList field of type AuthorizationData with cardinality 0..* is optional and contains the list of values that form the new local authorization list in case of a full update or the changes to be applied to the local authorization list in the Charge Point in case of a differential update. The maximum number of AuthorizationData elements is available in the configuration key SendLocalListMaxLength.
+
+The updateType field of type UpdateType with cardinality 1..1 is required and contains the type of update, either full or differential, for this request.
+
+## 6.42. SendLocalList.conf
+
+This section contains the field definition of the SendLocalList.conf PDU sent by the Charge Point to the Central System in response to a SendLocalList.req PDU. This response indicates the success of the local list update operation.
+
+The SendLocalList.conf PDU contains a single required field named status of type UpdateStatus with cardinality 1..1. This field indicates whether the Charge Point has successfully received and applied the update of the local authorization list.
+
+## 6.43. SetChargingProfile.req
+
+This section contains the field definition of the SetChargingProfile.req PDU sent by the Central System to the Charge Point. The Central System uses this message to send charging profiles to a Charge Point.
+
+The SetChargingProfile.req PDU contains two required fields. The connectorId field of type integer with cardinality 1..1 contains the connector to which the charging profile applies. If connectorId = 0, and the message contains a ChargePointMaxProfile it contains an overall limit for the Charge Point. If connectorId = 0, and the message contains a TxDefaultProfile it contains limits that are to be used for any new transaction on any connector of that Charge Point. The csChargingProfiles field of type ChargingProfile with cardinality 1..1 contains the charging profile to be set at the Charge Point.
+
+## 6.44. SetChargingProfile.conf
+
+This section contains the field definition of the SetChargingProfile.conf PDU sent by the Charge Point to the Central System in response to a SetChargingProfile.req PDU. This response indicates whether the charging profile has been successfully processed.
+
+The SetChargingProfile.conf PDU contains a single required field named status of type ChargingProfileStatus with cardinality 1..1. This field returns whether the Charge Point has been able to process the message successfully. This does not guarantee the schedule will be followed exactly, as there might be other constraints the Charge Point may need to take into account.
+
+## 6.45. StartTransaction.req
+
+This section contains the field definition of the StartTransaction.req PDU sent by the Charge Point to the Central System. This message initiates a new charging transaction.
+
+The StartTransaction.req PDU contains five fields with varying requirements. The connectorId field of type integer with the constraint that connectorId must be greater than 0 has cardinality 1..1 and is required. This field identifies which connector of the Charge Point is used.
+
+The idTag field of type IdToken with cardinality 1..1 is required and contains the identifier for which a transaction has to be started. The meterStart field of type integer with cardinality 1..1 is required and contains the meter value in Wh for the connector at start of the transaction. The reservationId field of type integer with cardinality 0..1 is optional and contains the identifier of the reservation that terminates as a result of this transaction. The timestamp field of type dateTime with cardinality 1..1 is required and contains the date and time on which the transaction is started.
+
+## 6.46. StartTransaction.conf
+
+This section contains the field definition of the StartTransaction.conf PDU sent by the Central System to the Charge Point in response to a StartTransaction.req PDU. This response provides authorization information and assigns a transaction identifier.
+
+The StartTransaction.conf PDU contains two required fields. The idTagInfo field of type IdTagInfo with cardinality 1..1 contains information about authorization status, expiry, and parent identifier. The transactionId field of type integer with cardinality 1..1 contains the transaction identifier supplied by the Central System. It is RECOMMENDED to use unique positive numbers for transactionIds. Negative numbers and zero (0) are possible, but don't have any special meaning to the Charge Point (they don't mean the transaction is rejected or something like that.) Note that the Charge Point might use transactionId = -1 in transaction related message when the Charge Point was not able to successfully deliver the StartTransaction.req.
+
+## 6.47. StatusNotification.req
+
+This section contains the field definition of the StatusNotification.req PDU sent by the Charge Point to the Central System. This message reports status changes and error conditions at the Charge Point.
+
+The StatusNotification.req PDU contains seven fields with varying requirements. The connectorId field of type integer with the constraint that connectorId must be greater than or equal to 0 has cardinality 1..1 and is required. This field contains the identifier of the connector for which the status is reported, with identifier 0 used when the status is for the Charge Point main controller.
+
+The errorCode field of type ChargePointErrorCode with cardinality 1..1 is required and contains the error code reported by the Charge Point. The info field of type CiString50Type with cardinality 0..1 is optional and contains additional free format information related to the error. The status field of type ChargePointStatus with cardinality 1..1 is required and contains the current status of the Charge Point.
+
+The timestamp field of type dateTime with cardinality 0..1 is optional and contains the time for which the status is reported, with the time of receipt of the message assumed when absent. The vendorId field of type CiString255Type with cardinality 0..1 is optional and identifies the vendor-specific implementation. The vendorErrorCode field of type CiString50Type with cardinality 0..1 is optional and contains the vendor-specific error code.
+
+## 6.48. StatusNotification.conf
+
+This section contains the field definition of the StatusNotification.conf PDU sent by the Central System to the Charge Point in response to a StatusNotification.req PDU. This acknowledgment message confirms receipt of the status notification and completes the status reporting cycle.
+
+The StatusNotification.conf PDU contains no fields, representing a simple acknowledgment without parameters. This minimal response structure ensures efficient communication while providing the necessary confirmation that the Central System has received and processed the status information from the Charge Point.
+
+## 6.49. StopTransaction.req
+
+This section contains the field definition of the StopTransaction.req PDU sent by the Charge Point to the Central System. This message notifies the Central System that a charging transaction has been completed and provides final transaction details.
+
+The StopTransaction.req PDU contains six fields with varying requirements. The idTag field of type IdToken with cardinality 0..1 is optional and contains the identifier which requested to stop the charging. This field is optional because a Charge Point may terminate charging without the presence of an idTag, such as in case of a reset, though a Charge Point shall send the idTag if known.
+
+The meterStop field of type integer with cardinality 1..1 is required and contains the meter value in Wh for the connector at end of the transaction. The timestamp field of type dateTime with cardinality 1..1 is required and contains the date and time on which the transaction is stopped. The transactionId field of type integer with cardinality 1..1 is required and contains the transaction identifier as received by the StartTransaction.conf.
+
+The reason field of type Reason with cardinality 0..1 is optional and contains the reason why the transaction was stopped, though it may only be omitted when the Reason is "Local". The transactionData field of type MeterValue with cardinality 0..* is optional and contains transaction usage details relevant for billing purposes.
+
+## 6.50. StopTransaction.conf
+
+This section contains the field definition of the StopTransaction.conf PDU sent by the Central System to the Charge Point in response to a StopTransaction.req PDU. This response acknowledges the transaction termination and may provide updated authorization information.
+
+The StopTransaction.conf PDU contains a single optional field named idTagInfo of type IdTagInfo with cardinality 0..1. This field contains information about authorization status, expiry, and parent identifier. The field is optional because a transaction may have been stopped without an identifier being present for the termination process.
+
+## 6.51. TriggerMessage.req
+
+This section contains the field definition of the TriggerMessage.req PDU sent by the Central System to the Charge Point. This message requests that the Charge Point send a specific type of message to provide current status or operational information.
+
+The TriggerMessage.req PDU contains two fields. The requestedMessage field of type MessageTrigger with cardinality 1..1 is required and specifies the type of message that the Central System wishes to receive from the Charge Point. The connectorId field of type integer with the constraint that connectorId must be greater than 0 has cardinality 0..1 and is optional, being filled in only when the request applies to a specific connector.
+
+## 6.52. TriggerMessage.conf
+
+This section contains the field definition of the TriggerMessage.conf PDU sent by the Charge Point to the Central System in response to a TriggerMessage.req PDU. This response indicates whether the Charge Point will send the requested message.
+
+The TriggerMessage.conf PDU contains a single required field named status of type TriggerMessageStatus with cardinality 1..1. This field indicates whether the Charge Point will send the requested notification or not, providing the Central System with immediate feedback about the acceptance or rejection of the trigger request.
+
+## 6.53. UnlockConnector.req
+
+This section contains the field definition of the UnlockConnector.req PDU sent by the Central System to the Charge Point. This message requests that a specific connector be unlocked to assist users experiencing mechanical difficulties.
+
+The UnlockConnector.req PDU contains a single required field named connectorId of type integer with the constraint that connectorId must be greater than 0 and cardinality 1..1. This field contains the identifier of the connector to be unlocked, specifying exactly which connector requires the unlock operation.
+
+## 6.54. UnlockConnector.conf
+
+This section contains the field definition of the UnlockConnector.conf PDU sent by the Charge Point to the Central System in response to an UnlockConnector.req PDU. This response indicates the success or failure of the unlock operation.
+
+The UnlockConnector.conf PDU contains a single required field named status of type UnlockStatus with cardinality 1..1. This field indicates whether the Charge Point has unlocked the connector successfully, providing immediate feedback about the mechanical operation's outcome.
+
+## 6.55. UpdateFirmware.req
+
+This section contains the field definition of the UpdateFirmware.req PDU sent by the Central System to the Charge Point. This message initiates a firmware update process by providing the necessary parameters for downloading and installing new firmware.
+
+The UpdateFirmware.req PDU contains four fields with varying requirements. The location field of type anyURI with cardinality 1..1 is required and contains a string containing a URI pointing to a location from which to retrieve the firmware. The retries field of type integer with cardinality 0..1 is optional and specifies how many times the Charge Point must try to download the firmware before giving up, with the Charge Point deciding how many times it wants to retry when this field is not present.
+
+The retrieveDate field of type dateTime with cardinality 1..1 is required and contains the date and time after which the Charge Point is allowed to retrieve the new firmware. The retryInterval field of type integer with cardinality 0..1 is optional and specifies the interval in seconds after which a retry may be attempted, with the Charge Point deciding how long to wait between attempts when this field is not present.
+
+## 6.56. UpdateFirmware.conf
+
+This section contains the field definition of the UpdateFirmware.conf PDU sent by the Charge Point to the Central System in response to an UpdateFirmware.req PDU. This acknowledgment confirms that the firmware update request has been received and accepted.
+
+The UpdateFirmware.conf PDU contains no fields, representing a simple acknowledgment without parameters. This streamlined response structure confirms that the Charge Point has received the firmware update instructions and will proceed with the update process according to the specified parameters and timeline.

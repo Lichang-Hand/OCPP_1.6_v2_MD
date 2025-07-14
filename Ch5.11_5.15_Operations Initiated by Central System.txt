@@ -1,0 +1,119 @@
+# 5.11. Remote Start Transaction
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- RemoteStartTransaction.req --|
+     |    (idTag, [connectorId],       |
+     |     [chargingProfile])          |
+     |                                |
+     |--- RemoteStartTransaction.conf >|
+     |    (status)                     |
+```
+
+The Central System can request that a Charge Point initiate a transaction by sending a RemoteStartTransaction.req PDU. Upon receipt of this request, the Charge Point shall reply with a RemoteStartTransaction.conf PDU and a status indicating whether it has accepted the request and will attempt to start a transaction.
+
+The effect of the RemoteStartTransaction.req message depends on the value of the AuthorizeRemoteTxRequests configuration key in the Charge Point. When the value of AuthorizeRemoteTxRequests is true, the Charge Point shall behave as if responding to a local action at the Charge Point to start a transaction with the idTag provided in the RemoteStartTransaction.req message. This means that the Charge Point will first attempt to authorize the idTag using the Local Authorization List, Authorization Cache, or an Authorize.req request. A transaction will only be started after authorization has been obtained.
+
+When the value of AuthorizeRemoteTxRequests is false, the Charge Point shall immediately attempt to start a transaction for the idTag specified in the RemoteStartTransaction.req message. It should be noted that after the transaction has been started, the Charge Point will send a StartTransaction request to the Central System, and the Central System will check the authorization status of the idTag when processing this StartTransaction request.
+
+Several typical use cases justify the Remote Start Transaction functionality. The operation enables a Charge Point Operator to assist an electric vehicle driver who experiences problems starting a transaction. It also enables mobile applications to control charging transactions via the Central System and allows the use of SMS messaging to control charging transactions through the Central System.
+
+The RemoteStartTransaction.req shall contain an identifier (idTag) that the Charge Point shall use when starting a transaction to send a StartTransaction.req to the Central System. The transaction is started using the same process as described in the StartTransaction section. The RemoteStartTransaction.req may contain a connector identifier if the transaction is to be started on a specific connector. When no connector identifier is provided, the Charge Point controls the connector selection. A Charge Point may reject a RemoteStartTransaction.req that does not include a connector identifier.
+
+The Central System may include a ChargingProfile in the RemoteStartTransaction request. The purpose of this ChargingProfile shall be set to TxProfile. If accepted, the Charge Point shall use this ChargingProfile for the transaction. When a Charge Point without support for Smart Charging receives a RemoteStartTransaction.req with a Charging Profile, this parameter should be ignored.
+
+## 5.12. Remote Stop Transaction
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- RemoteStopTransaction.req --|
+     |    (transactionId)             |
+     |                                |
+     |--- RemoteStopTransaction.conf >|
+     |    (status)                    |
+```
+
+The Central System can request that a Charge Point terminate a transaction by sending a RemoteStopTransaction.req PDU to the Charge Point with the identifier of the transaction. The Charge Point shall reply with a RemoteStopTransaction.conf PDU and a status indicating whether it has accepted the request and whether a transaction with the given transactionId is ongoing and will be stopped.
+
+This remote request to stop a transaction is equivalent to a local action to stop a transaction. Therefore, the transaction shall be stopped, the Charge Point shall send a StopTransaction.req PDU, and if applicable, unlock the connector.
+
+Two main use cases justify the Remote Stop Transaction functionality. The operation enables a Charge Point Operator to assist an electric vehicle driver who experiences problems stopping a transaction. It also enables mobile applications to control charging transactions via the Central System, providing users with remote control capabilities over their charging sessions.
+
+## 5.13. Reserve Now
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- ReserveNow.req -------------|
+     |    (connectorId, expiryDate,   |
+     |     idTag, reservationId,      |
+     |     [parentIdTag])             |
+     |                                |
+     |--- ReserveNow.conf ----------->|
+     |    (status)                    |
+```
+
+A Central System can issue a ReserveNow.req PDU to a Charge Point to reserve a connector for use by a specific idTag. This functionality allows users to ensure that a connector will be available when they arrive at the Charge Point.
+
+To request a reservation, the Central System shall send a ReserveNow.req PDU to a Charge Point. The Central System may specify a particular connector to be reserved. Upon receipt of a ReserveNow.req PDU, the Charge Point shall respond with a ReserveNow.conf PDU.
+
+When the reservationId in the request matches an existing reservation in the Charge Point, the Charge Point shall replace that reservation with the new reservation specified in the request. If the reservationId does not match any reservation in the Charge Point, the Charge Point shall return a status value of 'Accepted' if it succeeds in reserving a connector.
+
+The Charge Point shall return 'Occupied' if the Charge Point or the specified connector are occupied. The Charge Point shall also return 'Occupied' when the Charge Point or connector has been reserved for the same or another idTag. The Charge Point shall return 'Faulted' if the Charge Point or the connector are in the Faulted state. The Charge Point shall return 'Unavailable' if the Charge Point or connector are in the Unavailable state. The Charge Point shall return 'Rejected' if it is configured not to accept reservations.
+
+If the Charge Point accepts the reservation request, it shall refuse charging for all incoming idTags on the reserved connector, except when the incoming idTag or the parent idTag match the idTag or parent idTag of the reservation.
+
+When the configuration key ReserveConnectorZeroSupported is set to true, the Charge Point supports reservations on connector 0. If the connectorId in the reservation request is 0, the Charge Point shall not reserve a specific connector but shall ensure that at any time during the validity of the reservation, one connector remains available for the reserved idTag. If the configuration key ReserveConnectorZeroSupported is not set or set to false, the Charge Point shall return 'Rejected'.
+
+When the parent idTag in the reservation has a value, the Charge Point may look it up in its Local Authorization List or Authorization Cache to determine the parent idTag associated with an incoming idTag. If it is not found in the Local Authorization List or Authorization Cache, the Charge Point shall send an Authorize.req for the incoming idTag to the Central System. The Authorize.conf response may contain the parent identifier.
+
+A reservation shall be terminated on the Charge Point when a transaction is started for the reserved idTag or parent idTag and on the reserved connector or any connector when the reserved connectorId is 0, when the time specified in expiryDate is reached, or when the Charge Point or connector are set to Faulted or Unavailable.
+
+If a transaction for the reserved idTag is started, the Charge Point shall send the reservationId in the StartTransaction.req PDU to notify the Central System that the reservation is terminated. When a reservation expires, the Charge Point shall terminate the reservation and make the connector available. The Charge Point shall send a status notification to notify the Central System that the reserved connector is now available.
+
+It is recommended to validate the identifier with an Authorize.req after reception of a ReserveNow.req and before the start of the transaction, ensuring that authorization remains valid when the reserved user actually begins their charging session.
+
+## 5.14. Reset
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- Reset.req ------------------|
+     |    (type)                      |
+     |                                |
+     |--- Reset.conf ---------------->|
+     |    (status)                    |
+```
+
+The Central System shall send a Reset.req PDU to request that a Charge Point reset itself. The Central System can request either a hard or a soft reset. Upon receipt of a Reset.req PDU, the Charge Point shall respond with a Reset.conf PDU. The response PDU shall include whether the Charge Point will attempt to reset itself.
+
+After receipt of a Reset.req, the Charge Point SHALL send a StopTransaction.req for any ongoing transaction before performing the reset. If the Charge Point fails to receive a StopTransaction.conf from the Central System, it SHALL queue the StopTransaction.req for later transmission.
+
+At receipt of a soft reset request, the Charge Point SHALL stop ongoing transactions gracefully and send StopTransaction.req for every ongoing transaction. It should then restart the application software (if possible, otherwise restart the processor/controller).
+
+At receipt of a hard reset request, the Charge Point SHALL restart (all) the hardware, it is not required to gracefully stop ongoing transaction. If possible the Charge Point sends a StopTransaction.req for previously ongoing transactions after having restarted and having been accepted by the Central System via a BootNotification.conf. This is a last resort solution for a not correctly functioning Charge Point, by sending a "hard" reset, (queued) information might get lost.
+
+Persistent states, such as a connector set to Unavailable, shall persist through the reset process, maintaining their status after the Charge Point has restarted and reconnected to the Central System.
+
+## 5.15. Send Local List
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- SendLocalList.req ----------|
+     |    (listVersion, updateType,   |
+     |     [localAuthorizationList])  |
+     |                                |
+     |--- SendLocalList.conf -------->|
+     |    (status)                    |
+```
+
+The Central System can send a Local Authorization List that a Charge Point can use for authorization of idTags. The list may be either a full list to replace the current list in the Charge Point or it may be a differential list with updates to be applied to the current list in the Charge Point.
+
+The Central System shall send a SendLocalList.req PDU to send the list to a Charge Point. The SendLocalList.req PDU shall contain the type of update (full or differential) and the version number that the Charge Point must associate with the local authorization list after it has been updated.
+
+Upon receipt of a SendLocalList.req PDU, the Charge Point shall respond with a SendLocalList.conf PDU. The response PDU shall indicate whether the Charge Point has accepted the update of the local authorization list. If the status is Failed or VersionMismatch and the updateType was Differential, then the Central System should retry sending the full local authorization list with updateType Full.
+
+When no local authorization list is provided (empty list) and the updateType is Full, all identifications are removed from the list. Requesting a Differential update without a local authorization list will have no effect on the list. All idTags in the local authorization list must be unique, with no duplicate values allowed.

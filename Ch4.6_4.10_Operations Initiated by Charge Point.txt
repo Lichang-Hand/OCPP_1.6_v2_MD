@@ -1,0 +1,182 @@
+# 4. Operations Initiated by Charge Point (Continued)
+
+## 4.6. Heartbeat
+
+```
+Charge Point                    Central System
+     |                               |
+     | Heartbeat.req()               |
+     |------------------------------>|
+     |                               |
+     | Heartbeat.conf(currentTime)   |
+     |<------------------------------|
+```
+
+To let the Central System know that a Charge Point is still connected, a Charge Point sends a heartbeat after a configurable time interval.
+
+The Charge Point SHALL send a Heartbeat.req PDU for ensuring that the Central System knows that a Charge Point is still alive.
+
+Upon receipt of a Heartbeat.req PDU, the Central System SHALL respond with a Heartbeat.conf. The response PDU SHALL contain the current time of the Central System, which is RECOMMENDED to be used by the Charge Point to synchronize its internal clock.
+
+The Charge Point MAY skip sending a Heartbeat.req PDU when another PDU has been sent to the Central System within the configured heartbeat interval. This implies that a Central System SHOULD assume availability of a Charge Point whenever a PDU has been received, the same way as it would have, when it received a Heartbeat.req PDU.
+
+> **Note:** With JSON over WebSocket, sending heartbeats is not mandatory. However, for time synchronization it is advised to at least send one heartbeat per 24 hour.
+
+## 4.7. Meter Values
+
+```
+Charge Point                           Central System
+     |                                      |
+     | MeterValues.req(connectorId,         |
+     |   meterValue, [transactionId])       |
+     |------------------------------------->|
+     |                                      |
+     | MeterValues.conf()                   |
+     |<-------------------------------------|
+```
+
+A Charge Point MAY sample the electrical meter or other sensor/transducer hardware to provide extra information about its meter values. It is up to the Charge Point to decide when it will send meter values. This can be configured using the ChangeConfiguration.req message to data acquisition intervals and specify data to be acquired and reported.
+
+When the value of the configuration variable MeterValueSampleInterval and/or ClockAlignedDataInterval has been set to a value greater than zero, the Charge Point SHALL send MeterValues at the given interval(s).
+
+The Charge Point SHALL send a MeterValues.req PDU for offloading meter values. The request PDU SHALL contain for each sample: The id of the Connector from which samples were taken. If the connectorId is 0, it is associated with the entire Charge Point. If the connectorId is 0 and the Measurand is energy related, the sample SHOULD be taken from the main energy meter. The transactionId of the transaction to which these values are related, if applicable. If there is no transaction in progress or if the values are taken from the main meter, then transaction id may be omitted. One or more meterValue elements, of type MeterValue, each representing a set of one or more data values taken at a particular point in time.
+
+The transactionId is always the ID of the Transaction that is ongoing on that connector at the moment the meter value sample is taken. When the TransactionId is set, only MeterValues related to that transaction can be reported. If the values are taken from the main energy meter, it is advised NOT to add a transactionId. When reporting Meter Values for connectorId 0 (the main energy meter) it is RECOMMENDED NOT to add a TransactionId.
+
+Each MeterValue element contains a timestamp and a set of one or more individual sampledvalue elements, all captured at the same point in time. Each sampledValue element contains a single value datum. The nature of each sampledValue is determined by the optional measurand, context, location, unit, phase, and format fields.
+
+The optional measurand field specifies the type of value being measured/reported. The optional context field specifies the reason/event triggering the reading. The optional location field specifies where the measurement is taken (e.g. Inlet, Outlet). The optional phase field specifies to which phase or phases of the electric installation the value applies. The Charging Point SHALL report all phase number dependent values from the electrical meter (or grid connection when absent) point of view.
+
+> **Note:** The phase field is not applicable to all Measurands.
+
+> **Note:** Two measurands (Current.Offered and Power.Offered) are available that are strictly speaking no measured values. They indicate the maximum amount of current/power that is being offered to the EV and are intended for use in smart charging applications.
+
+For individual connector phase rotation information, the Central System MAY query the ConnectorPhaseRotation configuration key on the Charging Point via GetConfiguration. The Charge Point SHALL report the phase rotation in respect to the grid connection. Possible values per connector are: NotApplicable, Unknown, RST, RTS, SRT, STR, TRS and TSR.
+
+The EXPERIMENTAL optional format field specifies whether the data is represented in the normal (default) form as a simple numeric value ("Raw"), or as "SignedData", an opaque digitally signed binary data block, represented as hex data. This experimental field may be deprecated and subsequently removed in later versions, when a more mature solution alternative is provided.
+
+To retain backward compatibility, the default values of all of the optional fields on a sampledValue element are such that a value without any additional fields will be interpreted, as a register reading of active import energy in Wh (Watt-hour) units.
+
+Upon receipt of a MeterValues.req PDU, the Central System SHALL respond with a MeterValues.conf.
+
+It is likely that The Central System applies sanity checks to the data contained in a MeterValues.req it received. The outcome of such sanity checks SHOULD NOT ever cause the Central System to not respond with a MeterValues.conf. Failing to respond with a MeterValues.conf will only cause the Charge Point to try the same message again as specified in Error responses to transaction-related messages.
+
+## 4.8. Start Transaction
+
+```
+Charge Point                                    Central System
+     |                                               |
+     | StartTransaction.req(connectorId, idTag,      |
+     |   meterStart, timestamp, [reservationId])     |
+     |---------------------------------------------->|
+     |                                               |
+     | StartTransaction.conf(idTagInfo,              |
+     |   transactionId)                              |
+     |<----------------------------------------------|
+```
+
+The Charge Point SHALL send a StartTransaction.req PDU to the Central System to inform about a transaction that has been started. If this transaction ends a reservation (see Reserve Now operation), then the StartTransaction.req MUST contain the reservationId.
+
+Upon receipt of a StartTransaction.req PDU, the Central System SHOULD respond with a StartTransaction.conf PDU. This response PDU MUST include a transaction id and an authorization status value.
+
+The Central System MUST verify validity of the identifier in the StartTransaction.req PDU, because the identifier might have been authorized locally by the Charge Point using outdated information. The identifier, for instance, may have been blocked since it was added to the Charge Point's Authorization Cache.
+
+When the authorization status in the StartTransaction.conf is not Accepted, and the transaction is still ongoing, the Charge Point SHOULD: when StopTransactionOnInvalidId is set to true, stop the transaction normally as stated in Stop Transaction. The Reason field in the Stop Transaction request should be set to DeAuthorized. If the Charge Point has the possibility to lock the Charging Cable, it SHOULD keep the Charging Cable locked until the same identifier (or an identifier with the same ParentIdTag) is used to start the transaction (StartTransaction.req) is presented. When StopTransactionOnInvalidId is set to false, only stop energy delivery to the vehicle.
+
+> **Note:** In the case of an invalid identifier, an operator MAY choose to charge the EV with a minimum amount of energy so the EV is able to drive away. This amount is controlled by the optional configuration key: MaxEnergyOnInvalidId.
+
+If Charge Point has implemented an Authorization Cache, then upon receipt of a StartTransaction.conf PDU the Charge Point SHALL update the cache entry, if the idTag is not in the Local Authorization List, with the IdTagInfo value from the response as described under Authorization Cache.
+
+If the Charge Point was unable to deliver the StartTransaction.req despite repeated attempts, or if the Central System was unable to deliver the StartTransaction.conf response, then the Charge Point will not receive a transactionId. In that case, the Charge Point SHALL send any Transaction related messages for this transaction to the Central System with a transactionId = -1. The Central System SHALL respond as if these messages refer to a valid transactionId, so that the Charge Point is not blocked by this.
+
+It is likely that The Central System applies sanity checks to the data contained in a StartTransaction.req it received. The outcome of such sanity checks SHOULD NOT ever cause the Central System to not respond with a StartTransaction.conf. Failing to respond with a StartTransaction.conf will only cause the Charge Point to try the same message again as specified in Error responses to transaction-related messages.
+
+## 4.9. Status Notification
+
+```
+Charge Point                                      Central System
+     |                                                 |
+     | StatusNotification.req(connectorId,             |
+     |   errorCode, status, [timestamp], [info],       |
+     |   [vendorId], [vendorErrorCode])                |
+     |------------------------------------------------>|
+     |                                                 |
+     | StatusNotification.conf()                       |
+     |<------------------------------------------------|
+```
+
+A Charge Point sends a notification to the Central System to inform the Central System about a status change or an error within the Charge Point. A Charge Point SHALL send a StatusNotification.req PDU to the Central System, taking into account some minimum status duration.
+
+> **Note:** The Occupied state as defined in previous OCPP versions is no longer relevant. The Occupied state is split into five new statuses: Preparing, Charging, SuspendedEV, SuspendedEVSE and Finishing.
+
+> **Note:** EVSE is used in Status Notification instead of Socket or Charge Point for future compatibility.
+
+After the Central System accept a Charge Point by sending a BootNotification.conf with a status Accepted, the Charge Point SHALL send a StatusNotification.req PDU for connectorId 0 and all connectors with the current status.
+
+The Charge Point MAY send a StatusNotification.req PDU to inform the Central System of fault conditions. When the 'status' field is not Faulted, the condition should be considered a warning since charging operations are still possible.
+
+> **Note:** ChargePointErrorCode EVCommunicationError SHALL only be used with status Preparing, SuspendedEV, SuspendedEVSE and Finishing and be treated as warning.
+
+When a Charge Point is configured with StopTransactionOnEVSideDisconnect set to false, a transaction is running and the EV becomes disconnected on EV side, then a StatusNotification.req with the state: SuspendedEV SHOULD be send to the Central System, with the 'errorCode' field set to: 'NoError'. The Charge Point SHOULD add additional information in the 'info' field, Notifying the Central System with the reason of suspension: 'EV side disconnected'. The current transaction is not stopped.
+
+When a Charge Point is configured with StopTransactionOnEVSideDisconnect set to true, a transaction is running and the EV becomes disconnected on EV side, then a StatusNotification.req with the state: 'Finishing' SHOULD be send to the Central System, with the 'errorCode' field set to: 'NoError'. The Charge Point SHOULD add additional information in the 'info' field, Notifying the Central System with the reason of stopping: 'EV side disconnected'. The current transaction is stopped.
+
+When a Charge Point connects to a Central System after having been offline, it updates the Central System about its status according to the following rules: The Charge Point SHOULD send a StatusNotification.req PDU with its current status if the status changed while the Charge Point was offline. The Charge Point MAY send a StatusNotification.req PDU to report an error that occurred while the Charge Point was offline. The Charge Point SHOULD NOT send StatusNotification.req PDUs for historical status change events that happened while the Charge Point was offline and that do not inform the Central System of Charge Point errors or the Charge Point's current status. The StatusNotification.req messages MUST be sent in the order in which the events that they describe occurred.
+
+> **Note:** The table above is only applicable to ConnectorId > 0. For ConnectorId 0, only a limited set is applicable, namely: Available, Unavailable and Faulted.
+
+A Charge Point Connector MAY have any of the 9 statuses as shown in status transition tables. For ConnectorId 0, only a limited set is applicable, namely: Available, Unavailable and Faulted. The status of ConnectorId 0 has no direct connection to the status of the individual Connectors (>0).
+
+> **Important:** When a Charge Point or a Connector is set to status Unavailable by a Change Availability command, the 'Unavailable' status MUST be persistent across reboots. The Charge Point MAY use the Unavailable status internally for other purposes (e.g. while updating firmware or waiting for an initial Accepted RegistrationStatus).
+
+As the status Occupied has been split into five new statuses (Preparing, Charging, SuspendedEV, SuspendedEVSE and Finishing), more StatusNotification.req PDUs will be sent from Charge Point to the Central System. For instance, when a transaction is started, the Connector status would successively change from Preparing to Charging with a short SuspendedEV and/or SuspendedEVSE inbetween, possibly within a couple of seconds.
+
+To limit the number of transitions, the Charge Point MAY omit sending a StatusNotification.req if it was active for less time than defined in the optional configuration key MinimumStatusDuration. This way, a Charge Point MAY choose not to send certain StatusNotification.req PDUs.
+
+> **Important:** A Charge Point manufacturer MAY have implemented a minimal status duration for certain status transitions separate of the MinimumStatusDuration setting. The time set in MinimumStatusDuration will be added to this default delay. Setting MinimumStatusDuration to zero SHALL NOT override the default manufacturer's minimal status duration.
+
+> **Warning:** Setting a high MinimumStatusDuration time may result in the delayed sending of all StatusNotifications, since the Charge Point will only send the StatusNotification.req once the MinimumStatusDuration time is passed.
+
+Upon receipt of a StatusNotification.req PDU, the Central System SHALL respond with a StatusNotification.conf PDU.
+
+## 4.10. Stop Transaction
+
+```
+Charge Point                                 Central System
+     |                                            |
+     | StopTransaction.req(meterStop,             |
+     |   timestamp, transactionId, reason,        |
+     |   [idTag], [transactionData])              |
+     |------------------------------------------->|
+     |                                            |
+     | StopTransaction.conf([idTagInfo])          |
+     |<-------------------------------------------|
+```
+
+When a transaction is stopped, the Charge Point SHALL send a StopTransaction.req PDU, notifying to the Central System that the transaction has stopped.
+
+A StopTransaction.req PDU MAY contain an optional TransactionData element to provide more details about transaction usage. The optional TransactionData element is a container for any number of MeterValues, using the same data structure as the meterValue elements of the MeterValues.req PDU (See section MeterValues)
+
+Upon receipt of a StopTransaction.req PDU, the Central System SHALL respond with a StopTransaction.conf PDU.
+
+> **Important:** The Central System cannot prevent a transaction from stopping. It MAY only inform the Charge Point it has received the StopTransaction.req and MAY send information about the idTag used to stop the transaction. This information SHOULD be used to update the Authorization Cache, if implemented.
+
+The idTag in the request PDU MAY be omitted when the Charge Point itself needs to stop the transaction. For instance, when the Charge Point is requested to reset.
+
+If a transaction is ended in a normal way (e.g. EV-driver presented his identification to stop the transaction), the Reason element MAY be omitted and the Reason SHOULD be assumed 'Local'. If the transaction is not ended normally, the Reason SHOULD be set to a correct value. As part of the normal transaction termination, the Charge Point SHALL unlock the cable (if not permanently attached).
+
+The Charge Point MAY unlock the cable (if not permanently attached) when the cable is disconnected at the EV. If supported, this functionality is reported and controlled by the configuration key UnlockConnectorOnEVSideDisconnect.
+
+The Charge Point MAY stop a running transaction when the cable is disconnected at the EV. If supported, this functionality is reported and controlled by the configuration key StopTransactionOnEVSideDisconnect.
+
+If StopTransactionOnEVSideDisconnect is set to false, the transaction SHALL not be stopped when the cable is disconnected from the EV. If the EV is reconnected, energy transfer is allowed again. In this case there is no mechanism to prevent other EVs from charging and disconnecting during that same ongoing transaction. With UnlockConnectorOnEVSideDisconnect set to false, the Connector SHALL remain locked at the Charge Point until the user presents the identifier.
+
+By setting StopTransactionOnEVSideDisconnect to true, the transaction SHALL be stopped when the cable is disconnected from the EV. If the EV is reconnected, energy transfer is not allowed until the transaction is stopped and a new transaction is started. If UnlockConnectorOnEVSideDisconnect is set to true, also the Connector on the Charge Point will be unlocked.
+
+> **Important:** If StopTransactionOnEVSideDisconnect is set to false, this SHALL have priority over UnlockConnectorOnEVSideDisconnect. In other words: cables always remain locked when the cable is disconnected at EV side when StopTransactionOnEVSideDisconnect is false.
+
+> **Note:** Setting StopTransactionOnEVSideDisconnect to true will prevent sabotage acts to stop the energy flow by unplugging not locked cables on EV side.
+
+It is likely that The Central System applies sanity checks to the data contained in a StopTransaction.req it received. The outcome of such sanity checks SHOULD NOT ever cause the Central System to not respond with a StopTransaction.conf. Failing to respond with a StopTransaction.conf will only cause the Charge Point to try the same message again as specified in Error responses to transaction-related messages.
+
+If Charge Point has implemented an Authorization Cache, then upon receipt of a StopTransaction.conf PDU the Charge Point SHALL update the cache entry, if the idTag is not in the Local Authorization List, with the IdTagInfo value from the response as described under Authorization Cache.

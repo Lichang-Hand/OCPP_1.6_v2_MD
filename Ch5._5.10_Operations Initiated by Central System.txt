@@ -1,0 +1,204 @@
+# 5. Operations Initiated by Central System
+
+This chapter describes the operations that can be initiated by the Central System to communicate with and control Charge Points within the OCPP 1.6 framework.
+
+## 5.1. Cancel Reservation
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- CancelReservation.req ------|
+     |    (reservationId)             |
+     |                                |
+     |--- CancelReservation.conf ---->|
+     |    (status)                    |
+```
+
+The Central System can cancel an existing reservation by sending a CancelReservation.req PDU to the Charge Point. This operation allows the Central System to release a previously reserved connector, making it available for other users.
+
+When the Charge Point receives a CancelReservation.req PDU, it must evaluate whether a reservation matching the specified reservationId exists. If the Charge Point has a reservation that matches the reservationId provided in the request PDU, it shall return a status of 'Accepted'. In cases where no matching reservation is found, the Charge Point shall return a status of 'Rejected'.
+
+## 5.2. Change Availability
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- ChangeAvailability.req -----|
+     |    (connectorId, type)         |
+     |                                |
+     |--- ChangeAvailability.conf --->|
+     |    (status)                    |
+```
+
+The Central System can request that a Charge Point modify its availability status through the ChangeAvailability operation. A Charge Point is considered available when it is actively charging or ready to begin charging operations. Conversely, a Charge Point is considered unavailable when it does not permit any charging activities.
+
+The Central System shall send a ChangeAvailability.req PDU to request that a Charge Point change its availability to either available or unavailable status. Upon receipt of this request, the Charge Point shall respond with a ChangeAvailability.conf PDU that indicates whether the Charge Point is capable of implementing the requested availability change.
+
+When a transaction is currently in progress, the Charge Point shall respond with an availability status of 'Scheduled' to indicate that the availability change will be implemented after the current transaction has completed. In situations where the Central System requests a Charge Point to change to a status it already maintains, the Charge Point shall respond with an availability status of 'Accepted'.
+
+When an availability change requested through a ChangeAvailability.req PDU has been successfully implemented, the Charge Point shall inform the Central System of its new availability status by sending a StatusNotification.req message as described in the relevant section.
+
+It is important to note that when the ChangeAvailability.req contains ConnectorId = 0, the status change applies to the entire Charge Point and all of its connectors. Additionally, certain states such as a connector set to Unavailable shall persist through system reboots.
+
+## 5.3. Change Configuration
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- ChangeConfiguration.req ----|
+     |    (key, value)                |
+     |                                |
+     |--- ChangeConfiguration.conf -->|
+     |    (status)                    |
+```
+
+The Central System can request that a Charge Point modify its configuration parameters through the ChangeConfiguration operation. To accomplish this, the Central System shall send a ChangeConfiguration.req PDU containing a key-value pair, where the "key" represents the name of the configuration setting to be changed and the "value" contains the new setting for that configuration parameter.
+
+Upon receipt of a ChangeConfiguration.req PDU, the Charge Point shall reply with a ChangeConfiguration.conf PDU indicating whether it was able to successfully process the requested change to its configuration. The content of both "key" and "value" fields is not prescribed by the specification, allowing for implementation-specific configuration parameters.
+
+The Charge Point shall set the status field in the ChangeConfiguration.conf PDU according to specific rules. If the change was applied successfully and becomes effective immediately, the Charge Point shall respond with a status of 'Accepted'. When the change was applied successfully but requires a system reboot to become effective, the Charge Point shall respond with a status of 'RebootRequired'. If the "key" does not correspond to a configuration setting supported by the Charge Point, it shall respond with a status of 'NotSupported'. In all other cases where the Charge Point did not set the configuration and none of the previous statuses apply, the Charge Point shall respond with a status of 'Rejected'.
+
+Examples of Change Configuration requests that would result in a 'Rejected' status include requests with out-of-range values and requests with values that do not conform to expected formats. When a key value is defined as a Comma Separated List (CSL), it may be accompanied by a [KeyName]MaxLength key that indicates the maximum length of the CSL in items. If this key is not set, a safe value of one item should be assumed.
+
+## 5.4. Clear Cache
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- ClearCache.req -------------|
+     |    ()                          |
+     |                                |
+     |--- ClearCache.conf ----------->|
+     |    (status)                    |
+```
+
+The Central System can request that a Charge Point clear its Authorization Cache through the ClearCache operation. This functionality allows the Central System to force the removal of cached authorization data from the Charge Point, ensuring that fresh authorization information will be requested for subsequent transactions.
+
+The Central System shall send a ClearCache.req PDU to initiate the clearing of the Charge Point's Authorization Cache. Upon receipt of a ClearCache.req PDU, the Charge Point shall respond with a ClearCache.conf PDU that indicates whether the Charge Point was able to successfully clear its Authorization Cache.
+
+## 5.5. Clear Charging Profile
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- ClearChargingProfile.req ---|
+     |    ([id], [connectorId],       |
+     |     [chargingProfilePurpose],  |
+     |     [stackLevel])              |
+     |                                |
+     |--- ClearChargingProfile.conf ->|
+     |    (status)                    |
+```
+
+When the Central System wishes to clear some or all of the charging profiles that were previously sent to the Charge Point, it shall use the ClearChargingProfile.req PDU. This operation provides the Central System with the capability to remove specific charging profiles or groups of charging profiles based on various criteria.
+
+The Charge Point shall respond with a ClearChargingProfile.conf PDU specifying whether it was able to successfully process the request. The Central System can use this message to clear either a specific charging profile denoted by its ID or a selection of charging profiles that match the values of the optional connectorId, stackLevel, and chargingProfilePurpose fields.
+
+## 5.6. Data Transfer
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- DataTransfer.req -----------|
+     |    (vendorId, [messageId],     |
+     |     [data])                    |
+     |                                |
+     |--- DataTransfer.conf --------->|
+     |    (status, [data])            |
+```
+
+When the Central System needs to send information to a Charge Point for functionality not supported by standard OCPP operations, it shall use the DataTransfer.req PDU. This mechanism provides a standardized way to implement vendor-specific or experimental functionality within the OCPP framework.
+
+The behavior of this operation is identical to the Data Transfer operation initiated by the Charge Point, as described in the corresponding section. This bidirectional capability ensures that both the Central System and Charge Point can exchange custom data using the same standardized mechanism.
+
+## 5.7. Get Composite Schedule
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- GetCompositeSchedule.req ---|
+     |    (connectorId, duration,     |
+     |     [chargingRateUnit])        |
+     |                                |
+     |--- GetCompositeSchedule.conf ->|
+     |    (status, [connectorId],     |
+     |     [scheduleStart],           |
+     |     [chargingSchedule])        |
+```
+
+The Central System may request that the Charge Point report its Composite Charging Schedule by sending a GetCompositeSchedule.req PDU. The reported schedule, returned in the GetCompositeSchedule.conf PDU, represents the result of calculations involving all active schedules and possible local limits present in the Charge Point. Local Limits might be taken into account during this calculation process.
+
+Upon receipt of a GetCompositeSchedule.req PDU, the Charge Point shall calculate the scheduled time intervals from the moment of message receipt up to the Duration (in seconds) and send them to the central system.
+
+When the ConnectorId in the request is set to '0', the Charge Point shall report the total expected power or current the Charge Point expects to consume from the grid during the requested time period. It is important to note that the charging schedule sent by the Charge Point is only indicative for that specific point in time, as this schedule might change over time due to external factors such as local balancing based on grid connection capacity becoming active or when one connector becomes available.
+
+If the Charge Point is not able to report the requested schedule, for instance if the connectorId is unknown, it shall respond with a status of Rejected.
+
+## 5.8. Get Configuration
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- GetConfiguration.req -------|
+     |    ([key])                     |
+     |                                |
+     |--- GetConfiguration.conf ----->|
+     |    (configurationKey,          |
+     |     [unknownKey])              |
+```
+
+To retrieve the values of configuration settings, the Central System shall send a GetConfiguration.req PDU to the Charge Point. This operation enables the Central System to query the current configuration state of the Charge Point and understand its operational parameters.
+
+If the list of keys in the request PDU is empty or missing (as it is optional), the Charge Point shall return a list of all configuration settings in the GetConfiguration.conf response. Otherwise, the Charge Point shall return a list of recognized keys along with their corresponding values and read-only status. Any unrecognized keys shall be placed in the response PDU as part of the optional unknown key list element of GetConfiguration.conf.
+
+The number of configuration keys that can be requested in a single PDU may be limited by the Charge Point. This maximum limit can be retrieved by reading the configuration key GetConfigurationMaxKeys.
+
+## 5.9. Get Diagnostics
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- GetDiagnostics.req ---------|
+     |    (location, [retries],       |
+     |     [retryInterval],           |
+     |     [startTime], [stopTime])   |
+     |                                |
+     |--- GetDiagnostics.conf ------->|
+     |    ([fileName])                |
+     |                                |
+     | Uploading diagnostics file...  |
+     |                                |
+     |--- DiagnosticsStatusNotif. --->|
+     |    (status: Uploading)         |
+     |<-- DiagnosticsStatusNotif. ----|
+     |    conf()                      |
+     |                                |
+     | Uploaded diagnostics file...   |
+     |                                |
+     |--- DiagnosticsStatusNotif. --->|
+     |    (status: Uploaded)          |
+     |<-- DiagnosticsStatusNotif. ----|
+     |    conf()                      |
+```
+
+The Central System can request diagnostic information from a Charge Point through the GetDiagnostics operation. The Central System shall send a GetDiagnostics.req PDU to obtain diagnostic information from a Charge Point, including a location where the Charge Point must upload its diagnostic data and optionally specifying begin and end times for the requested diagnostic information.
+
+Upon receipt of a GetDiagnostics.req PDU, if diagnostic information is available, the Charge Point shall respond with a GetDiagnostics.conf PDU stating the name of the file containing the diagnostic information that will be uploaded. The Charge Point shall upload a single file, and the format of the diagnostics file is not prescribed by the specification. If no diagnostics file is available, then the GetDiagnostics.conf shall not contain a file name.
+
+During uploading of a diagnostics file, the Charge Point MUST send DiagnosticsStatusNotification.req PDUs to keep the Central System updated with the status of the upload process. This ensures that the Central System remains informed about the progress and completion of the diagnostic file transfer.
+
+## 5.10. Get Local List Version
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- GetLocalListVersion.req ----|
+     |    ()                          |
+     |                                |
+     |--- GetLocalListVersion.conf -->|
+     |    (listVersion)               |
+```
+
+To support synchronization of the Local Authorization List, the Central System can request the version number of the Local Authorization List from a Charge Point. The Central System shall send a GetLocalListVersion.req PDU to request this version information.
+
+Upon receipt of a GetLocalListVersion.req PDU, the Charge Point shall respond with a GetLocalListVersion.conf PDU containing the version number of its Local Authorization List. A version number of 0 (zero) shall be used to indicate that the local authorization list is empty, while a version number of -1 shall be used to indicate that the Charge Point does not support Local Authorization Lists.

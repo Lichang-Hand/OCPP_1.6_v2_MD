@@ -1,0 +1,10 @@
+6. Messages (Table of Contents > page 53.~ page 49. )
+Scope
+Terminology and Conventions
+Introduction
+Operations Initiated by Charge Point
+Operations Initiated by Central System
+Messages
+Types
+Firmware and Diagnostics File Transfer
+Standard Configuration Key Names & Values

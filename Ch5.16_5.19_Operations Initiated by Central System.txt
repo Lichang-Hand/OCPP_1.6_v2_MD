@@ -1,0 +1,260 @@
+# 5.16. Set Charging Profile
+
+```
+Charge Point                    Central System
+     |                                |
+  alt|[at start of transaction]       |
+     |--- StartTransaction.req ------>|
+     |    (connectorId, idTag,        |
+     |     meterStart, timestamp      |
+     |     [reservationId])           |
+     |                                |
+     |<-- StartTransaction.conf ------|
+     |    (idTagInfo, transactionId)  |
+     |                                |
+     |<-- SetChargingProfile.req -----|
+     |    (ConnectorId,               |
+     |     csChargingProfiles)        |
+     |                                |
+     |--- SetChargingProfile.conf --->|
+     |    (status)                    |
+     |                                |
+  [otherwise]                        |
+     |<-- SetChargingProfile.req -----|
+     |    (ConnectorId,               |
+     |     csChargingProfiles)        |
+     |                                |
+     |--- SetChargingProfile.conf --->|
+     |    (status)                    |
+```
+
+A Central System can send a SetChargingProfile.req to a Charge Point to establish a charging profile in several specific situations. These include setting the charging profile for a transaction at the start of that transaction, incorporating a charging profile within a RemoteStartTransaction.req sent to a Charge Point, modifying the active profile for a transaction while it is in progress, and establishing a charging profile outside the context of a transaction as a separate message to set a charging profile to a local controller, Charge Point, or a default charging profile to a connector.
+
+To prevent mismatches between transactions and a TxProfile, the Central System shall include the transactionId in a SetChargingProfile.req when the profile applies to a specific transaction. This ensures that the charging profile is correctly associated with the intended transaction and prevents conflicts or confusion.
+
+ChargingProfiles set via SetChargingProfile.req SHALL be persistent across reboots/power cycles.
+
+**Error Handling:**
+
+If an invalid value is used for an enumeration in ChargingProfile or ChargingSchedule, e.g. when using a value for chargingRateUnit that is not 'A' or 'W', then Charge Point SHALL respond with RPC Framework CALLERROR: PropertyConstraintViolation (JSON) or SOAP Fault: Sender, ProtocolError (SOAP).
+
+If an invalid value for connectorId is used in SetChargingProfile.req, then the Charge Point SHALL respond with RPC Framework CALLERROR: PropertyConstraintViolation (JSON) or SOAP Fault: Sender, ProtocolError (SOAP).
+
+If the Charge Point does not support smart charging, then it SHALL respond with RPC Framework CALLERROR: NotSupported (JSON) or SOAP Fault: Receiver, NotSupported (SOAP).
+
+### 5.16.1. Setting a charging profile at start of transaction
+
+When the Central System receives a StartTransaction.req, it shall respond with a StartTransaction.conf. If there is a need for a charging profile, the Central System may choose to send a SetChargingProfile.req to the Charge Point following the transaction initiation.
+
+It is recommended to check the timestamp in the StartTransaction.req PDU prior to sending a charging profile to verify that the transaction is likely still ongoing. The StartTransaction.req might have been cached during an offline period, making the timestamp verification an important step to ensure relevance.
+
+### 5.16.2. Setting a charge profile in a RemoteStartTransaction request
+
+The Central System may include a charging profile in a RemoteStartTransaction request. When the Central System includes a ChargingProfile, the ChargingProfilePurpose must be set to TxProfile and the transactionId SHALL NOT be set.
+
+The Charge Point SHALL apply the given profile to the newly started transaction. This transaction will receive a transactionId assigned by the Central System via a StartTransaction.conf. When the Charge Point receives a SetChargingProfile.req with the transactionId for this transaction and with the same StackLevel as the profile given in the RemoteStartTransaction.req, the Charge Point SHALL replace the existing charging profile. Otherwise, it SHALL install or stack the profile alongside the already existing profiles.
+
+### 5.16.3. Setting a charging profile during a transaction
+
+The Central System may send a charging profile to a Charge Point to update the charging profile for an ongoing transaction. The Central System shall use the SetChargingProfile.req PDU for this purpose. When a charging profile with the same chargingProfileId or the same combination of stackLevel and ChargingProfilePurpose exists on the Charge Point, the new charging profile shall replace the existing charging profile. Otherwise, it shall be added to the existing collection.
+
+The Charge Point shall then re-evaluate its collection of charge profiles to determine which charging profile will become active. To ensure that the updated charging profile applies only to the current transaction, the chargingProfilePurpose of the ChargingProfile must be set to TxProfile, as described in the Charging Profile Purposes section.
+
+When the ongoing transaction is not using a ChargingProfile or using the TxDefaultProfile, and a new or updated TxDefaultProfile is received, the transaction SHALL continue, but switch to using the new or updated TxDefaultProfile.
+
+### 5.16.4. Setting a charging profile outside of a transaction
+
+The Central System may send charging profiles to a Charge Point that are to be used as default charging profiles. The Central System shall use the SetChargingProfile.req PDU for this purpose. Such charging profiles may be sent at any time. When a charging profile with the same chargingProfileId or the same combination of stackLevel and ChargingProfilePurpose exists on the Charge Point, the new charging profile shall replace the existing charging profile. Otherwise, it shall be added to the collection.
+
+The Charge Point shall then re-evaluate its collection of charge profiles to determine which charging profile will become active. It is not possible to set a ChargingProfile with purpose set to TxProfile without the presence of an active transaction or in advance of a transaction.
+
+When a ChargingProfile is refreshed during execution, it is advised to put the startSchedule of the new ChargingProfile in the past, ensuring there is no period of default charging behavior between the ChargingProfiles. The Charge Point shall continue to execute the existing ChargingProfile until the new ChargingProfile is installed.
+
+Several important considerations apply to charging profile implementation. When the chargingSchedulePeriod is longer than duration, the remainder periods shall not be executed. When duration is longer than the chargingSchedulePeriod, the Charge Point shall maintain the value of the last chargingSchedulePeriod until duration has ended. When recurrencyKind is used in combination with a chargingSchedulePeriod or duration that is longer than the recurrence period duration, the remainder periods shall not be executed. The startPeriod of the first chargingSchedulePeriod in a chargingSchedule shall always be 0.
+
+When recurrencyKind is used in combination with a chargingSchedule duration shorter than the recurrencyKind period, the Charge Point shall fall back to default behavior after the chargingSchedule duration ends. This fallback means that the Charge Point shall use a ChargingProfile with a lower stackLevel if available. When no other ChargingProfile is available, the Charge Point shall allow charging as if no ChargingProfile is installed. When the chargingSchedulePeriod or duration is longer than the recurrence period duration, the remainder periods shall not be executed.
+
+**NOTE:** When recurrencyKind is used in combination with a chargingSchedulePeriod and/or duration that is longer than the recurrence period duration, the remainder periods SHALL NOT be executed.
+
+**NOTE:** The startPeriod of the first ChargingSchedulePeriod in a ChargingSchedule SHALL always be 0.
+
+## 5.17. Trigger Message
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- TriggerMessage.req ---------|
+     |    (requestedMessage,          |
+     |     [connectorId])             |
+     |                                |
+     |--- TriggerMessage.conf ------->|
+     |    (status)                    |
+```
+
+During normal operation, the Charge Point informs the Central System of its state and any relevant occurrences. When there is nothing to report, the Charge Point will send at least a heartbeat at a predefined interval. Under normal circumstances this arrangement functions adequately, but situations may arise where the Central System has reason to doubt the last known state. The Central System may need updated information when a firmware update is in progress and the last status notification received was much longer ago than could reasonably be expected. Similar concerns apply to the progress of diagnostics requests.
+
+The problem in these situations is not that the needed information is not covered by existing messages, but rather that it is strictly a timing issue. The Charge Point possesses the information but has no way of knowing that the Central System would like an immediate update.
+
+The TriggerMessage.req makes it possible for the Central System to request that the Charge Point send Charge Point-initiated messages. In the request, the Central System indicates which message it wishes to receive. For every such requested message, the Central System may optionally indicate to which connector this request applies. The requested message is leading, meaning that if the specified connectorId is not relevant to the message, it should be ignored. In such cases, the requested message should still be sent.
+
+Conversely, when the connectorId is relevant but absent, this should be interpreted as a request for all allowed connectorId values. For example, a request for a statusNotification for connectorId 0 is a request for the status of the Charge Point. A request for a statusNotification without connectorId is a request for multiple statusNotifications, including the notification for the Charge Point itself and a notification for each of its connectors.
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- TriggerMessage.req ---------|
+     |    (RequestedMessage:          |
+     |     StatusNotification,        |
+     |     ConnectorId: 1)            |
+     |                                |
+     |--- TriggerMessage.conf ------->|
+     |    (Status: Accepted)          |
+     |                                |
+     |--- StatusNotification.req ---->|
+     |    (ConnectorId: 1,            |
+     |     errorCode: NoError,        |
+     |     Status: Charging)          |
+     |                                |
+     |<-- StatusNotification.conf ----|
+     |    ()                          |
+```
+
+The Charge Point shall first send the TriggerMessage response before sending the requested message. In the TriggerMessage.conf, the Charge Point shall indicate whether it will send the requested message by returning ACCEPTED or REJECTED. The decision to accept or reject the request is at the discretion of the Charge Point. When the requested message is unknown or not implemented, the Charge Point shall return NOT_IMPLEMENTED.
+
+Messages that the Charge Point marks as accepted should be sent. The situation could occur that between accepting the request and actually sending the requested message, that same message gets sent because of normal operations. In such cases, the message just sent may be considered as complying with the request.
+
+The TriggerMessage mechanism is not intended to retrieve historic data. The messages it triggers should only provide current information. A MeterValues.req message triggered in this way, for instance, SHALL return the most recent measurements for all measurands configured in configuration key MeterValuesSampledData.
+
+StartTransaction and StopTransaction have been excluded from this mechanism because they are not state related but by their nature describe a transition rather than a current state.
+
+**Special Restrictions:**
+
+Once a CSMS has sent a BootNotification.conf message with status registrationStatus = Accepted to the Charge Point, then CSMS SHALL not send a TriggerMessage to request for a new BootNotification until the Charge Point sends a BootNotification.req message.
+
+## 5.18. Unlock Connector
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- UnlockConnector.req --------|
+     |    (connectorId)               |
+     |                                |
+     |--- UnlockConnector.conf ------>|
+     |    (status)                    |
+```
+
+The Central System can request that a Charge Point unlock a connector by sending an UnlockConnector.req PDU. This functionality serves a specific operational purpose in assisting users who encounter mechanical difficulties.
+
+The purpose of this message is to help electric vehicle drivers who experience problems unplugging their cable from the Charge Point in case of malfunction of the connector cable retention mechanism. When an electric vehicle driver contacts the Charge Point Operator help desk, an operator could manually trigger the sending of an UnlockConnector.req to the Charge Point, forcing a new attempt to unlock the connector. Ideally, this action will result in the connector unlocking so that the electric vehicle driver can unplug the cable and drive away.
+
+The UnlockConnector.req should not be used to remotely stop a running transaction. For that purpose, the Remote Stop Transaction operation should be used instead, as it provides the appropriate mechanism for transaction termination.
+
+Upon receipt of an UnlockConnector.req PDU, the Charge Point shall respond with an UnlockConnector.conf PDU. The response PDU shall indicate whether the Charge Point was able to unlock its connector successfully.
+
+When there was a transaction in progress on the specific connector, the Charge Point shall finish the transaction first as described in the Stop Transaction section before proceeding with the unlock operation. The UnlockConnector.req is intended only for unlocking the cable retention lock on the connector, not for unlocking a connector access door or other security mechanisms.
+
+**Response Status Values:**
+
+- **UnlockFailed**: Failed to unlock the connector: The Charge Point has tried to unlock the connector and has detected that the connector is still locked or the unlock mechanism failed.
+- **NotSupported**: Charge Point has no connector lock, or ConnectorId is unknown.
+
+## 5.19. Update Firmware
+
+```
+Charge Point                    Central System
+     |                                |
+     |<-- UpdateFirmware.req ---------|
+     |    (location, retrieveDate,    |
+     |     [retries], [retryInterval])|
+     |                                |
+     |--- UpdateFirmware.conf ------->|
+     |    ()                          |
+     |                                |
+     | Waiting for retrieveDate...    |
+     |                                |
+     |--- FirmwareStatusNotif.req --->|
+     |    (status: Downloading)       |
+     |<-- FirmwareStatusNotif.conf ---|
+     |    ()                          |
+     |                                |
+     | Downloading...                 |
+     |                                |
+     |--- FirmwareStatusNotif.req --->|
+     |    (status: Downloaded)        |
+     |<-- FirmwareStatusNotif.conf ---|
+     |    ()                          |
+     |                                |
+     | Waiting for transactions to    |
+     | finish...                      |
+     |                                |
+     |--- FirmwareStatusNotif.req --->|
+     |    (status: Installing)        |
+     |<-- FirmwareStatusNotif.conf ---|
+     |    ()                          |
+     |                                |
+     | Installing...                  |
+     |                                |
+  alt|[automatic reboot after         |
+     | firmware update]               |
+     |                                |
+     | Reboot                         |
+     |                                |
+     |--- BootNotification.req ------>|
+     |    (chargePointModel,          |
+     |     chargePointVendor,         |
+     |     [chargeBoxSerialNumber],   |
+     |     [chargePointSerialNumber], |
+     |     [firmwareVersion], [iccid],|
+     |     [imsi], [meterSerialNumber],|
+     |     [meterType])               |
+     |                                |
+     |<-- BootNotification.conf ------|
+     |    (currentTime,               |
+     |     heartbeatInterval, status) |
+     |                                |
+     |--- FirmwareStatusNotif.req --->|
+     |    (status: Installed)         |
+     |<-- FirmwareStatusNotif.conf ---|
+     |    ()                          |
+     |                                |
+  [manual reboot after firmware      |
+   update]                           |
+     |                                |
+     |--- FirmwareStatusNotif.req --->|
+     |    (status: Installed)         |
+     |<-- FirmwareStatusNotif.conf ---|
+     |    ()                          |
+     |                                |
+     |<-- Reset.req -------------------|
+     |    (Hard)                      |
+     |                                |
+     |--- Reset.conf ---------------->|
+     |    ()                          |
+     |                                |
+     | Reboot                         |
+     |                                |
+     |--- BootNotification.req ------>|
+     |    (chargePointModel,          |
+     |     chargePointVendor,         |
+     |     [chargeBoxSerialNumber],   |
+     |     [chargePointSerialNumber], |
+     |     [firmwareVersion], [iccid],|
+     |     [imsi], [meterSerialNumber],|
+     |     [meterType])               |
+     |                                |
+     |<-- BootNotification.conf ------|
+     |    (currentTime,               |
+     |     heartbeatInterval, status) |
+```
+
+The Central System can notify a Charge Point that it needs to update its firmware through the UpdateFirmware operation. The Central System shall send an UpdateFirmware.req PDU to instruct the Charge Point to install new firmware. The PDU shall contain a date and time after which the Charge Point is allowed to retrieve the new firmware and the location from which the firmware can be downloaded.
+
+Upon receipt of an UpdateFirmware.req PDU, the Charge Point shall respond with an UpdateFirmware.conf PDU. The Charge Point should start retrieving the firmware as soon as possible after the retrieve date specified in the request.
+
+During the downloading and installation of the firmware, the Charge Point MUST send FirmwareStatusNotification.req PDUs to keep the Central System updated with the status of the update process. This ensures that the Central System remains informed about the progress and can take appropriate action if issues arise.
+
+The Charge Point SHALL, if the new firmware image is "valid", install the new firmware as soon as it is able to. When it is not possible to continue charging during installation of firmware, it is RECOMMENDED to wait until the Charging Session has ended and the Charge Point is idle before commencing installation. It is RECOMMENDED to set connectors that are not in use to UNAVAILABLE while the Charge Point waits for the session to end.
+
+**Note on Sequence Diagram:**
+
+The sequence diagram above is an example. It is good practice to first reboot the Charge Point to check the new firmware is booting and able to connect to the Central System, before sending the status: Installed. It is not a requirement.

@@ -1,0 +1,358 @@
+# 9. Standard Configuration Key Names & Values
+
+This section presents a comprehensive list of all configuration keys with standardized roles within this specification, organized by Feature Profiles. Configuration keys mentioned as required under a particular profile must be supported by Charge Points that implement that profile.
+
+For optional Configuration Keys with boolean type, the following rules apply when responding to a GetConfiguration.req without a specified list of keys:
+
+- When the key is present, the Charge Point provides the functionality configured by the key, which can be enabled or disabled by setting the key value.
+- When the key is absent, the Charge Point does not provide the functionality that would be configured by the key.
+
+The "Accessibility" property indicates whether a configuration key value is read-only ("R") or read-write ("RW"). Read-only keys allow the Central System to read values using GetConfiguration but not modify them. Read-write accessibility enables the Central System to both read and modify key values using ChangeConfiguration.
+
+## 9.1. Core Profile
+
+### 9.1.1. AllowOfflineTxForUnknownId
+
+**Required/Optional:** Optional  
+**Accessibility:** RW  
+**Type:** Boolean  
+**Description:** When this key exists, the Charge Point supports Unknown Offline Authorization. When this key reports a value of true, Unknown Offline Authorization is enabled.
+
+### 9.1.2. AuthorizationCacheEnabled
+
+**Required/Optional:** Optional  
+**Accessibility:** RW  
+**Type:** Boolean  
+**Description:** When this key exists, the Charge Point supports an Authorization Cache. When this key reports a value of true, the Authorization Cache is enabled.
+
+### 9.1.3. AuthorizeRemoteTxRequests
+
+**Required/Optional:** Required  
+**Accessibility:** R or RW (Choice is up to Charge Point implementation)  
+**Type:** Boolean  
+**Description:** Determines whether a remote request to start a transaction in the form of a RemoteStartTransaction.req message should be authorized beforehand like a local action to start a transaction.
+
+### 9.1.4. BlinkRepeat
+
+**Required/Optional:** Optional  
+**Accessibility:** RW  
+**Type:** Integer  
+**Unit:** Times  
+**Description:** Number of times to blink Charge Point lighting when signalling.
+
+### 9.1.5. ClockAlignedDataInterval
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Integer  
+**Unit:** Seconds  
+**Description:** Size (in seconds) of the clock-aligned data interval. This defines the size (in seconds) of the set of evenly spaced aggregation intervals per day, starting at 00:00:00 (midnight). For example, a value of 900 (15 minutes) indicates that every day should be broken into 96 15-minute intervals.
+
+When clock aligned data is being transmitted, the interval in question is identified by the start time and optional duration interval value, represented according to the ISO8601 standard. All per-period data (such as energy readings) should be accumulated for flow-type measurands such as energy, or averaged for other values across the entire interval or partial interval at the beginning or end of a Transaction, and transmitted (if enabled) at the end of each interval, bearing the interval start time timestamp.
+
+A value of "0" (numeric zero), by convention, is interpreted to mean that no clock-aligned data should be transmitted.
+
+### 9.1.6. ConnectionTimeOut
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Integer  
+**Unit:** Seconds  
+**Description:** Interval from beginning of status 'Preparing' until incipient Transaction is automatically canceled, due to failure of EV driver to correctly insert the charging cable connector(s) into the appropriate socket(s). The Charge Point SHALL go back to the original state, probably 'Available'.
+
+### 9.1.7. ConnectorPhaseRotation
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** CSL  
+**Description:** The phase rotation per connector in respect to the connector's electrical meter (or if absent, the grid connection). Possible values per connector are:
+
+- NotApplicable (for Single phase or DC Charge Points)
+- Unknown (not yet known)
+- RST (Standard Reference Phasing)
+- RTS (Reversed Reference Phasing)
+- SRT (Reversed 240 degree rotation)
+- STR (Standard 120 degree rotation)
+- TRS (Standard 240 degree rotation)
+- TSR (Reversed 120 degree rotation)
+
+R can be identified as phase 1 (L1), S as phase 2 (L2), T as phase 3 (L3).
+
+When known, the Charge Point MAY also report the phase rotation between the grid connection and the main energy meter by using index number Zero (0).
+
+Values are reported in CSL, formatted: 0.RST, 1.RST, 2.RTS
+
+### 9.1.8. ConnectorPhaseRotationMaxLength
+
+**Required/Optional:** Optional  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** Maximum number of items in a ConnectorPhaseRotation Configuration Key.
+
+### 9.1.9. GetConfigurationMaxKeys
+
+**Required/Optional:** Required  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** Maximum number of requested configuration keys in a GetConfiguration.req PDU.
+
+### 9.1.10. HeartbeatInterval
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Integer  
+**Unit:** Seconds  
+**Description:** Interval of inactivity (no OCPP exchanges) with central system after which the Charge Point should send a Heartbeat.req PDU.
+
+### 9.1.11. LightIntensity
+
+**Required/Optional:** Optional  
+**Accessibility:** RW  
+**Type:** Integer  
+**Unit:** %  
+**Description:** Percentage of maximum intensity at which to illuminate Charge Point lighting.
+
+### 9.1.12. LocalAuthorizeOffline
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Boolean  
+**Description:** Determines whether the Charge Point, when offline, will start a transaction for locally-authorized identifiers.
+
+### 9.1.13. LocalPreAuthorize
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Boolean  
+**Description:** Determines whether the Charge Point, when online, will start a transaction for locally-authorized identifiers without waiting for or requesting an Authorize.conf from the Central System.
+
+### 9.1.14. MaxEnergyOnInvalidId
+
+**Required/Optional:** Optional  
+**Accessibility:** RW  
+**Type:** Integer  
+**Unit:** Wh  
+**Description:** Maximum energy in Wh delivered when an identifier is invalidated by the Central System after start of a transaction.
+
+### 9.1.15. MeterValuesAlignedData
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** CSL  
+**Description:** Clock-aligned measurand(s) to be included in a MeterValues.req PDU, every ClockAlignedDataInterval seconds.
+
+### 9.1.16. MeterValuesAlignedDataMaxLength
+
+**Required/Optional:** Optional  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** Maximum number of items in a MeterValuesAlignedData Configuration Key.
+
+### 9.1.17. MeterValuesSampledData
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** CSL  
+**Description:** Sampled measurands to be included in a MeterValues.req PDU, every MeterValueSampleInterval seconds. Where applicable, the Measurand is combined with the optional phase; for instance: Voltage.L1
+
+Default: "Energy.Active.Import.Register"
+
+### 9.1.18. MeterValuesSampledDataMaxLength
+
+**Required/Optional:** Optional  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** Maximum number of items in a MeterValuesSampledData Configuration Key.
+
+### 9.1.19. MeterValueSampleInterval
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Integer  
+**Unit:** Seconds  
+**Description:** Interval between sampling of metering (or other) data, intended to be transmitted by "MeterValues" PDUs. For charging session data (ConnectorId>0), samples are acquired and transmitted periodically at this interval from the start of the charging transaction.
+
+A value of "0" (numeric zero), by convention, is interpreted to mean that no sampled data should be transmitted.
+
+### 9.1.20. MinimumStatusDuration
+
+**Required/Optional:** Optional  
+**Accessibility:** RW  
+**Type:** Integer  
+**Unit:** Seconds  
+**Description:** The minimum duration that a Charge Point or Connector status is stable before a StatusNotification.req PDU is sent to the Central System.
+
+### 9.1.21. NumberOfConnectors
+
+**Required/Optional:** Required  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** The number of physical charging connectors of this Charge Point.
+
+### 9.1.22. ResetRetries
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Integer  
+**Unit:** Times  
+**Description:** Number of times to retry an unsuccessful reset of the Charge Point.
+
+### 9.1.23. StopTransactionOnEVSideDisconnect
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Boolean  
+**Description:** When set to true, the Charge Point SHALL administratively stop the transaction when the cable is unplugged from the EV.
+
+### 9.1.24. StopTransactionOnInvalidId
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Boolean  
+**Description:** Determines whether the Charge Point will stop an ongoing transaction when it receives a non-Accepted authorization status in a StartTransaction.conf for this transaction.
+
+### 9.1.25. StopTxnAlignedData
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** CSL  
+**Description:** Clock-aligned periodic measurand(s) to be included in the TransactionData element of StopTransaction.req MeterValues.req PDU for every ClockAlignedDataInterval of the Transaction.
+
+### 9.1.26. StopTxnAlignedDataMaxLength
+
+**Required/Optional:** Optional  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** Maximum number of items in a StopTxnAlignedData Configuration Key.
+
+### 9.1.27. StopTxnSampledData
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** CSL  
+**Description:** Sampled measurands to be included in the TransactionData element of StopTransaction.req PDU, every MeterValueSampleInterval seconds from the start of the charging session.
+
+### 9.1.28. StopTxnSampledDataMaxLength
+
+**Required/Optional:** Optional  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** Maximum number of items in a StopTxnSampledData Configuration Key.
+
+### 9.1.29. SupportedFeatureProfiles
+
+**Required/Optional:** Required  
+**Accessibility:** R  
+**Type:** CSL  
+**Description:** A list of supported Feature Profiles. Possible profile identifiers: Core, FirmwareManagement, LocalAuthListManagement, Reservation, SmartCharging and RemoteTrigger.
+
+### 9.1.30. SupportedFeatureProfilesMaxLength
+
+**Required/Optional:** Optional  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** Maximum number of items in a SupportedFeatureProfiles Configuration Key.
+
+### 9.1.31. TransactionMessageAttempts
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Integer  
+**Unit:** Times  
+**Description:** How often the Charge Point should try to submit a transaction-related message when the Central System fails to process it.
+
+### 9.1.32. TransactionMessageRetryInterval
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Integer  
+**Unit:** Seconds  
+**Description:** How long the Charge Point should wait before resubmitting a transaction-related message that the Central System failed to process.
+
+### 9.1.33. UnlockConnectorOnEVSideDisconnect
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Boolean  
+**Description:** When set to true, the Charge Point SHALL unlock the cable on Charge Point side when the cable is unplugged at the EV.
+
+### 9.1.34. WebSocketPingInterval
+
+**Required/Optional:** Optional  
+**Accessibility:** RW  
+**Type:** Integer  
+**Unit:** Seconds  
+**Description:** Only relevant for websocket implementations. 0 disables client side websocket Ping/Pong. In this case there is either no ping/pong or the server initiates the ping and client responds with Pong. Positive values are interpreted as number of seconds between pings. Negative values are not allowed. ChangeConfiguration is expected to return a REJECTED result.
+
+## 9.2. Local Auth List Management Profile
+
+### 9.2.1. LocalAuthListEnabled
+
+**Required/Optional:** Required  
+**Accessibility:** RW  
+**Type:** Boolean  
+**Description:** Determines whether the Local Authorization List is enabled.
+
+### 9.2.2. LocalAuthListMaxLength
+
+**Required/Optional:** Required  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** Maximum number of identifications that can be stored in the Local Authorization List.
+
+### 9.2.3. SendLocalListMaxLength
+
+**Required/Optional:** Required  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** Maximum number of identifications that can be sent in a single SendLocalList.req.
+
+## 9.3. Reservation Profile
+
+### 9.3.1. ReserveConnectorZeroSupported
+
+**Required/Optional:** Optional  
+**Accessibility:** R  
+**Type:** Boolean  
+**Description:** When this configuration key is present and set to true: Charge Point supports reservations on connector 0.
+
+## 9.4. Smart Charging Profile
+
+### 9.4.1. ChargeProfileMaxStackLevel
+
+**Required/Optional:** Required  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** Max StackLevel of a ChargingProfile. The number defined also indicates the max allowed number of installed charging schedules per Charging Profile Purposes.
+
+### 9.4.2. ChargingScheduleAllowedChargingRateUnit
+
+**Required/Optional:** Required  
+**Accessibility:** R  
+**Type:** CSL  
+**Description:** A list of supported quantities for use in a ChargingSchedule. Allowed values: 'Current' and 'Power'.
+
+### 9.4.3. ChargingScheduleMaxPeriods
+
+**Required/Optional:** Required  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** Maximum number of periods that may be defined per ChargingSchedule.
+
+### 9.4.4. ConnectorSwitch3to1PhaseSupported
+
+**Required/Optional:** Optional  
+**Accessibility:** R  
+**Type:** Boolean  
+**Description:** When defined and true, this Charge Point supports switching from 3 to 1 phase during a Transaction.
+
+### 9.4.5. MaxChargingProfilesInstalled
+
+**Required/Optional:** Required  
+**Accessibility:** R  
+**Type:** Integer  
+**Description:** Maximum number of Charging profiles installed at a time.
+
+---
+
+**Section Complete:** This completes the conversion of Chapter 9 of the OCPP 1.6 specification covering Standard Configuration Key Names & Values. Please indicate which section you would like me to convert next.

@@ -1,0 +1,121 @@
+## 7.21. ClearChargingProfileStatus
+
+The ClearChargingProfileStatus enumeration defines the possible response values for ClearChargingProfile.req messages. This enumeration indicates whether the Charge Point successfully processed the charging profile clearing operation and provides specific feedback about the outcome.
+
+The enumeration contains two values that convey different operational results. The Accepted status indicates that the request has been accepted and will be executed, confirming that the Charge Point found matching charging profiles and successfully removed them from its configuration. The Unknown status signifies that no charging profiles were found matching the request criteria, providing clear feedback when the specified parameters do not correspond to any existing profiles in the Charge Point's memory.
+
+## 7.22. ConfigurationStatus
+
+The ConfigurationStatus enumeration defines the possible response values in ChangeConfiguration.conf messages. This enumeration provides detailed feedback about the success or failure of configuration parameter changes, including information about implementation requirements and system capabilities.
+
+The enumeration encompasses four distinct status values that cover various scenarios encountered during configuration changes. The Accepted status indicates that the configuration key is supported and the setting has been changed successfully, with the change taking effect immediately. The Rejected status signifies that the configuration key is supported, but the setting could not be changed due to validation failures, operational constraints, or other system limitations.
+
+The RebootRequired status indicates that the configuration key is supported and the setting has been changed, but the change will only become effective after a system reboot, with the Charge Point not automatically rebooting itself. The NotSupported status signifies that the configuration key is not supported by the Charge Point implementation, providing clear feedback when attempting to modify unsupported parameters.
+
+## 7.23. DataTransferStatus
+
+The DataTransferStatus enumeration defines the possible response values in DataTransfer.conf messages. This enumeration provides standardized feedback for vendor-specific data exchange operations, enabling clear communication about the success or failure of custom data transfers.
+
+The enumeration includes four status values that address different aspects of data transfer processing. The Accepted status indicates that the message has been accepted and the contained request is accepted, confirming successful processing of the vendor-specific data. The Rejected status signifies that the message has been accepted but the contained request is rejected, typically due to validation failures or operational constraints.
+
+The UnknownMessageId status indicates that the message could not be interpreted due to an unknown messageId string, providing specific feedback when the vendor-specific message identifier is not recognized. The UnknownVendorId status signifies that the message could not be interpreted due to an unknown vendorId string, offering clear indication when the vendor identifier is not supported by the receiving system.
+
+## 7.24. DiagnosticsStatus
+
+The DiagnosticsStatus enumeration defines the possible status values in DiagnosticsStatusNotification.req messages. This enumeration provides comprehensive tracking of diagnostic file upload operations, enabling the Central System to monitor progress and identify potential issues.
+
+The enumeration contains four status values that represent different stages of the diagnostics process. The Idle status indicates that the Charge Point is not performing diagnostics-related tasks and shall only be used in a DiagnosticsStatusNotification.req that was triggered by a TriggerMessage.req. The Uploaded status signifies that diagnostic information has been successfully uploaded to the specified location.
+
+The UploadFailed status indicates that uploading of diagnostics failed, providing clear notification when technical issues prevent successful file transfer. The Uploading status represents the active state when the file is currently being uploaded, allowing the Central System to track ongoing transfer operations.
+
+## 7.25. FirmwareStatus
+
+The FirmwareStatus enumeration defines the possible status values for firmware download operations as reported in FirmwareStatusNotification.req messages. This enumeration enables comprehensive monitoring of firmware update processes, providing detailed progress information throughout the entire update lifecycle.
+
+The enumeration encompasses seven status values that cover all phases of firmware management. The Downloaded status indicates that new firmware has been successfully downloaded by the Charge Point. The DownloadFailed status signifies that the Charge Point failed to download firmware, typically due to network issues or file accessibility problems.
+
+The Downloading status represents the active state when firmware is currently being downloaded. The Idle status indicates that the Charge Point is not performing firmware update related tasks and shall only be used in a FirmwareStatusNotification.req that was triggered by a TriggerMessage.req.
+
+The InstallationFailed status indicates that installation of new firmware has failed, providing notification when technical issues prevent successful firmware deployment. The Installing status represents the active state when firmware is currently being installed. The Installed status confirms that new firmware has been successfully installed in the Charge Point, completing the update process.
+
+## 7.26. GetCompositeScheduleStatus
+
+The GetCompositeScheduleStatus enumeration defines the possible response values for GetCompositeSchedule.req messages. This enumeration indicates whether the Charge Point can provide the requested composite charging schedule information.
+
+The enumeration contains two straightforward status values. The Accepted status indicates that the request has been accepted and will be executed, confirming that the Charge Point can calculate and provide the requested composite schedule. The Rejected status signifies that the request has not been accepted and will not be executed, typically occurring when the specified connector identifier is invalid or when the Charge Point cannot generate the requested schedule information.
+
+## 7.27. IdTagInfo
+
+The IdTagInfo class contains comprehensive status information about an identifier, serving as a critical component in authorization responses. This class is returned in Authorize, Start Transaction, and Stop Transaction responses, providing essential information for access control and user management.
+
+The IdTagInfo class contains three fields with specific characteristics and requirements. The expiryDate field of type dateTime with cardinality 0..1 is optional and contains the date at which the idTag should be removed from the Authorization Cache. When expiryDate is not provided, the status has no defined end date, indicating indefinite validity subject to other system constraints.
+
+The parentIdTag field of type IdToken with cardinality 0..1 is optional and contains the parent identifier, enabling hierarchical authorization structures and group-based access control. The status field of type AuthorizationStatus with cardinality 1..1 is required and contains whether the idTag has been accepted or rejected by the Central System, providing the fundamental authorization decision.
+
+## 7.28. IdToken
+
+The IdToken type contains the identifier used for authorization purposes and represents a fundamental data element in OCPP authentication processes. This type is designed as a case insensitive string to ensure consistent identifier handling across different implementations and user interactions.
+
+The IdToken is defined as CiString20Type, indicating that it is case insensitive and supports robust identifier management. In future releases, this type may evolve into a complex type to support multiple forms of identifiers, providing enhanced flexibility for different authentication mechanisms and identifier formats.
+
+## 7.29. KeyValue
+
+The KeyValue class contains information about specific configuration keys and their associated values. This class is returned in GetConfiguration.conf responses, providing essential configuration management capabilities for system administrators and automated management systems.
+
+The KeyValue class contains three fields with distinct purposes and requirements. The key field of type CiString50Type with cardinality 1..1 is required and contains the configuration parameter name. The readonly field of type boolean with cardinality 1..1 is required and indicates whether the value can be modified using the ChangeConfiguration message, providing clear information about parameter mutability.
+
+The value field of type CiString500Type with cardinality 0..1 is optional and contains the current configuration value. This field may be absent when the key is known but not set, allowing systems to distinguish between unset parameters and parameters with empty values.
+
+## 7.30. Location
+
+The Location enumeration defines allowable values for the optional location field of a value element in SampledValue structures. This enumeration enables precise specification of where measurements are taken within the charging infrastructure, supporting detailed monitoring and diagnostics.
+
+The enumeration includes five distinct location values that cover different measurement points. The Body value indicates measurement inside the body of the Charge Point, typically used for temperature or other internal system parameters. The Cable value represents measurement taken from the cable between the electric vehicle and Charge Point, providing information about cable-specific conditions.
+
+The EV value indicates measurement taken by the electric vehicle itself, enabling reporting of vehicle-side parameters when available. The Inlet value represents measurement at the network or grid inlet connection, providing grid-side monitoring capabilities. The Outlet value indicates measurement at a connector and serves as the default value when no specific location is specified.
+
+## 7.31. Measurand
+
+The Measurand enumeration defines allowable values for the optional measurand field of a Value element, as used in MeterValues.req and StopTransaction.req messages. This comprehensive enumeration enables detailed energy monitoring and reporting capabilities, with Energy.Active.Import.Register serving as the default value when no specific measurand is specified.
+
+The enumeration includes extensive measurement categories that support comprehensive energy management. Import represents energy flow from the Grid to the Charge Point, electric vehicle, or other load, while Export represents energy flow from the electric vehicle to the Charge Point or from the Charge Point to the Grid.
+
+Current measurements include Current.Export for instantaneous current flow from the electric vehicle, Current.Import for instantaneous current flow to the electric vehicle, and Current.Offered for maximum current offered to the electric vehicle. Energy register measurements encompass Energy.Active.Export.Register for numerical values read from the active electrical energy register measuring energy exported to the grid, and Energy.Active.Import.Register for numerical values read from the active electrical energy register measuring energy imported from the grid supply.
+
+Reactive energy measurements include Energy.Reactive.Export.Register for numerical values read from the reactive electrical energy register measuring energy exported to the grid, and Energy.Reactive.Import.Register for numerical values read from the reactive electrical energy register measuring energy imported from the grid supply.
+
+Interval measurements provide Energy.Active.Export.Interval for absolute amounts of active electrical energy exported to the grid during associated time intervals, Energy.Active.Import.Interval for absolute amounts of active electrical energy imported from the grid supply during associated time intervals, Energy.Reactive.Export.Interval for absolute amounts of reactive electrical energy exported to the grid during associated time intervals, and Energy.Reactive.Import.Interval for absolute amounts of reactive electrical energy imported from the grid supply during associated time intervals.
+
+Additional measurements include Frequency for instantaneous reading of powerline frequency, with OCPP 1.6 using Hertz as the unit of measure for any SampledValue with measurand Frequency. Power measurements encompass Power.Active.Export for instantaneous active power exported by the electric vehicle, Power.Active.Import for instantaneous active power imported by the electric vehicle, Power.Factor for instantaneous power factor of total energy flow, Power.Offered for maximum power offered to the electric vehicle, Power.Reactive.Export for instantaneous reactive power exported by the electric vehicle, and Power.Reactive.Import for instantaneous reactive power imported by the electric vehicle.
+
+Specialized measurements include RPM for fan speed in revolutions per minute, SoC for state of charge of charging vehicle in percentage, Temperature for temperature reading inside the Charge Point, and Voltage for instantaneous AC RMS supply voltage. All register values relating to a single charging transaction or non-transactional consumer must be monotonically increasing in time, with the actual quantity of energy computed as the register value minus the register value recorded at the start of the transaction or other relevant reference point.
+
+## 7.32. MessageTrigger
+
+The MessageTrigger enumeration defines the types of requests that can be triggered using a TriggerMessage.req operation. This enumeration enables the Central System to request specific types of status updates or operational information from Charge Points when immediate feedback is required.
+
+The enumeration includes six trigger types that cover essential operational messages. BootNotification triggers a BootNotification request, enabling verification of Charge Point connectivity and configuration. DiagnosticsStatusNotification triggers a DiagnosticsStatusNotification request, providing current diagnostic upload status information.
+
+FirmwareStatusNotification triggers a FirmwareStatusNotification request, enabling monitoring of firmware update progress. Heartbeat triggers a Heartbeat request, confirming connectivity and providing time synchronization. MeterValues triggers a MeterValues request, obtaining current measurement data. StatusNotification triggers a StatusNotification request, providing current operational status information.
+
+## 7.33. MeterValue
+
+The MeterValue class represents a collection of one or more sampled values in MeterValues.req and StopTransaction.req messages. This class ensures that all sampled values within a single MeterValue are captured at the same point in time, providing coherent measurement snapshots for analysis and billing purposes.
+
+The MeterValue class contains two fields with specific requirements. The timestamp field of type dateTime with cardinality 1..1 is required and contains the timestamp for measured values, establishing the precise time reference for all associated measurements. The sampledValue field of type SampledValue with cardinality 1..* is required and contains one or more measured values, enabling comprehensive data collection in a single measurement event.
+
+## 7.34. Phase
+
+The Phase enumeration specifies how measured values should be interpreted in electrical systems, particularly in SampledValue contexts. This enumeration enables precise specification of electrical measurement points and phase relationships, though not all Phase values are applicable to all Measurands.
+
+The enumeration includes multiple phase specification options that cover various electrical measurement scenarios. L1, L2, and L3 indicate measurements on respective line phases, while N represents measurements on the Neutral conductor. L1-N, L2-N, and L3-N indicate measurements on respective line phases with respect to the Neutral conductor, providing phase-to-neutral measurement capabilities.
+
+L1-L2, L2-L3, and L3-L1 represent measurements between specific line phases, enabling line-to-line voltage and current measurements that are essential for three-phase electrical system monitoring and analysis.
+
+## 7.35. ReadingContext
+
+The ReadingContext enumeration defines the values for the context field of a value in SampledValue structures. This enumeration provides essential information about the circumstances under which measurements were taken, enabling proper interpretation of meter data for billing, analysis, and operational purposes.
+
+The enumeration encompasses seven context values that represent different measurement scenarios. Interruption.Begin indicates a value taken at the start of an interruption, while Interruption.End represents a value taken when resuming after interruption. Other serves as a catch-all value for any situations not specifically covered by other context types.
+
+Sample.Clock indicates a value taken at clock-aligned intervals, supporting regular measurement schedules. Sample.Periodic represents a value taken as a periodic sample relative to the start time of transaction, enabling transaction-based measurement tracking. Transaction.Begin indicates a value taken at the start of transaction, while Transaction.End represents a value taken at the end of transaction. Trigger indicates a value taken in response to a TriggerMessage.req, providing on-demand measurement capabilities.

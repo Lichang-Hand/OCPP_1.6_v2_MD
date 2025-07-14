@@ -1,0 +1,173 @@
+# 7. Types
+
+This chapter provides comprehensive definitions for all data types used throughout the OCPP 1.6 specification. These type definitions establish the structure and constraints for data elements exchanged between Charge Points and Central Systems, ensuring consistent interpretation and implementation across different systems.
+
+## 7.1. AuthorizationData
+
+The AuthorizationData class represents elements that constitute an entry of a Local Authorization List update. This data structure enables the Central System to manage authorization information stored locally on Charge Points, supporting both full list replacements and incremental updates.
+
+The AuthorizationData class contains two fields with specific requirements. The idTag field of type IdToken with cardinality 1..1 is required and contains the identifier to which this authorization applies. The idTagInfo field of type IdTagInfo with cardinality 0..1 is optional but becomes required when UpdateType is Full. This field contains information about authorization status, expiry date, and parent identifier.
+
+For Differential updates, specific rules apply to the idTagInfo field. When this element is present, the entry shall be added or updated in the Local Authorization List. When this element is absent, the entry for this idTag in the Local Authorization List shall be deleted, providing a mechanism for removing outdated or invalid authorizations.
+
+## 7.2. AuthorizationStatus
+
+The AuthorizationStatus enumeration defines the possible status values in response to an Authorize.req message. This enumeration provides clear indicators of whether an identifier is permitted to initiate or continue charging operations.
+
+The enumeration includes five distinct values. The Accepted status indicates that the identifier is allowed for charging operations. The Blocked status signifies that the identifier has been blocked and is not allowed for charging. The Expired status indicates that the identifier has expired and is not allowed for charging. The Invalid status denotes that the identifier is unknown to the system and is not allowed for charging. The ConcurrentTx status indicates that the identifier is already involved in another transaction and multiple transactions are not allowed, which is only relevant for StartTransaction.req messages.
+
+## 7.3. AvailabilityStatus
+
+The AvailabilityStatus enumeration defines the possible response values for a ChangeAvailability.req message. This enumeration indicates whether the Charge Point can implement the requested availability change and provides information about timing considerations.
+
+The enumeration contains three distinct values. The Accepted status indicates that the request has been accepted and will be executed immediately. The Rejected status signifies that the request has not been accepted and will not be executed. The Scheduled status indicates that the request has been accepted and will be executed when any transactions currently in progress have finished.
+
+## 7.4. AvailabilityType
+
+The AvailabilityType enumeration specifies the requested availability change in a ChangeAvailability.req message. This enumeration defines the two fundamental operational states that can be requested for a Charge Point or specific connector.
+
+The enumeration includes two values. The Inoperative value indicates that the Charge Point is not available for charging operations. The Operative value signifies that the Charge Point is available for charging operations and can accept new transactions.
+
+## 7.5. CancelReservationStatus
+
+The CancelReservationStatus enumeration defines the possible response values in a CancelReservation.conf message. This enumeration indicates whether the reservation cancellation request was successful or if any issues prevented the cancellation.
+
+The enumeration contains two values. The Accepted status indicates that the reservation for the specified identifier has been successfully cancelled. The Rejected status signifies that the reservation could not be cancelled because there is no active reservation for the specified identifier.
+
+## 7.6. ChargePointErrorCode
+
+The ChargePointErrorCode enumeration defines various error conditions that can be reported in StatusNotification.req messages. This comprehensive set of error codes enables detailed fault reporting and diagnosis of Charge Point operational issues.
+
+The enumeration includes multiple error categories covering different aspects of Charge Point operation. ConnectorLockFailure indicates a failure to lock or unlock connector mechanisms. EVCommunicationError represents communication failures with the vehicle, which might involve Mode 3 or other communication protocol problems, though this is not considered a critical error requiring the Charge Point to enter a faulted state, instead requiring a transition to SuspendedEVSE state.
+
+GroundFailure indicates that a ground fault circuit interrupter has been activated. HighTemperature signifies that the temperature inside the Charge Point has exceeded acceptable levels. InternalError represents errors in internal hardware or software components. LocalListConflict indicates that authorization information received from the Central System conflicts with the Local Authorization List.
+
+NoError serves as the default value when no error condition exists. OtherError covers error types not specifically defined elsewhere, with additional information provided in the vendorErrorCode field. OverCurrentFailure indicates that an over-current protection device has tripped. OverVoltage signifies that voltage has risen above acceptable levels.
+
+PowerMeterFailure represents failures in reading electrical/energy/power meter data. PowerSwitchFailure indicates failures in controlling power switch mechanisms. ReaderFailure represents failures with idTag reader hardware. ResetFailure indicates an inability to perform a reset operation. UnderVoltage signifies that voltage has dropped below acceptable levels. WeakSignal indicates that wireless communication devices are reporting weak signal conditions.
+
+## 7.7. ChargePointStatus
+
+The ChargePointStatus enumeration defines the operational states that can be reported in StatusNotification.req messages. This enumeration provides detailed status information for both the Charge Point main controller and individual connectors, enabling precise monitoring of system state.
+
+The status values are categorized into Operative and Inoperative states. Operative states include Available, Preparing, Charging, SuspendedEVSE, SuspendedEV, Finishing, and Reserved. Inoperative states include Unavailable and Faulted. For the Charge Point main controller identified by connectorId equal to 0, only a subset of statuses applies, specifically Available, Unavailable, and Faulted.
+
+The Available status indicates that a connector becomes available for a new user and represents an Operative condition. The Preparing status signifies that a connector becomes no longer available for new users but has no ongoing transaction yet, typically occurring when a user presents a tag, inserts a cable, or a vehicle occupies the parking bay.
+
+The Charging status indicates that the contactor of a connector closes, allowing the vehicle to charge. The SuspendedEVSE status represents conditions where the electric vehicle is connected to the Electric Vehicle Supply Equipment but the EVSE is not offering energy to the vehicle, such as due to smart charging restrictions, local supply power constraints, or StartTransaction.conf indicating that charging is not allowed.
+
+The SuspendedEV status indicates that the EV is connected to the EVSE and the EVSE is willing and ready to offer energy, but EV is not asking or taking energy. For example: A Charge Point using mode 3: if the EV is in B2 this also means SuspendedEV. (Operative)
+
+The Finishing status represents the period when a transaction has stopped at a connector, but the connector is not yet available for a new user, such as when the cable has not been removed or the vehicle has not left the parking bay.
+
+The Reserved status indicates that a connector becomes reserved as a result of a Reserve Now command. The Unavailable status represents conditions when a connector becomes unavailable as the result of a Change Availability command or an event upon which the Charge Point transitions to unavailable at its discretion, with the status change occurring immediately or being scheduled, and requiring a Status Notification when the availability change becomes effective.
+
+The Faulted status indicates that a Charge Point or connector has reported an error and is not available for energy delivery, representing an Inoperative condition requiring attention before normal operations can resume.
+
+## 7.8. ChargingProfile
+
+The ChargingProfile class provides a comprehensive structure for defining charging constraints and schedules. A ChargingProfile consists of a ChargingSchedule that describes the amount of power or current that can be delivered per time interval, enabling sophisticated energy management and smart charging implementations.
+
+The ChargingProfile class contains multiple fields with specific requirements and constraints. The chargingProfileId field of type integer with cardinality 1..1 is required and provides a unique identifier for this profile. The transactionId field of type integer with cardinality 0..1 is optional and is only valid when ChargingProfilePurpose is set to TxProfile, allowing the profile to be matched to a specific transaction.
+
+The stackLevel field of type integer with a constraint of being greater than or equal to 0 and cardinality 1..1 is required and determines the level in the hierarchy stack of profiles, with higher values having precedence over lower values and the lowest level being 0. The chargingProfilePurpose field of type ChargingProfilePurposeType with cardinality 1..1 is required and defines the purpose of the schedule transferred by this message.
+
+The chargingProfileKind field of type ChargingProfileKindType with cardinality 1..1 is required and indicates the kind of schedule. The recurrencyKind field of type RecurrencyKindType with cardinality 0..1 is optional and indicates the start point of a recurrence pattern. SHALL only be used when the field: chargingProfileKind is set to: Recurring.
+
+The validFrom field of type dateTime with cardinality 0..1 is optional and defines the point in time at which the profile starts to be valid, with the profile being valid as soon as it is received by the Charge Point when this field is absent. The validTo field of type dateTime with cardinality 0..1 is optional and defines the point in time at which the profile stops being valid, with the profile remaining valid until it is replaced by another profile when this field is absent.
+
+The chargingSchedule field of type ChargingSchedule with cardinality 1..1 is required and contains limits for the available power or current over time, providing the detailed scheduling information that governs charging behavior.
+
+## 7.9. ChargingProfileKindType
+
+The ChargingProfileKindType enumeration defines the different kinds of charging profiles available in the system. This enumeration determines how the timing and scheduling information within a charging profile should be interpreted.
+
+Kind of charging profile, as used in: ChargingProfile.
+
+The enumeration contains three distinct values. The Absolute value indicates that schedule periods are relative to a fixed point in time defined in the schedule. The Recurring value specifies that the schedule restarts periodically at the first schedule period. The Relative value indicates that schedule periods are relative to a situation-specific start point, such as the start of a transaction, that is determined by the Charge Point.
+
+## 7.10. ChargingProfilePurposeType
+
+The ChargingProfilePurposeType enumeration defines the intended purpose of charging profiles within the system. This classification enables different types of charging constraints to be applied appropriately based on their intended use case.
+
+Purpose of the charging profile, as used in: ChargingProfile.
+
+The enumeration includes three distinct purposes. The ChargePointMaxProfile purpose provides configuration for the maximum power or current available for an entire Charge Point. The TxDefaultProfile purpose represents a default profile that can be configured in the Charge Point. When a new transaction is started, this profile SHALL be used, unless it was a transaction that was started by a RemoteStartTransaction.req with a ChargeProfile that is accepted by the Charge Point.
+
+The TxProfile purpose defines profiles with constraints to be imposed by the Charge Point on the current transaction, or on a new transaction when this is started via a RemoteStartTransaction.req with a ChargingProfile. A profile with this purpose shall cease to be valid when the transaction terminates, ensuring that transaction-specific constraints do not persist beyond their intended scope.
+
+## 7.11. ChargingProfileStatus
+
+The ChargingProfileStatus enumeration defines the possible response values for SetChargingProfile.req messages. This enumeration indicates whether the Charge Point can accept and implement the requested charging profile.
+
+The enumeration contains three values. The Accepted status indicates that the request has been accepted and will be executed. The Rejected status signifies that the request has not been accepted and will not be executed. The NotSupported status indicates that the Charge Point does not support the requested charging profile functionality.
+
+## 7.12. ChargingRateUnitType
+
+The ChargingRateUnitType enumeration defines the units of measurement for charging schedules. This enumeration specifies how power or current limits should be interpreted in GetCompositeSchedule.req and ChargingSchedule contexts.
+
+The enumeration includes two primary units. The W value represents Watts (power). This is the TOTAL allowed charging power. If used for AC Charging, the phase current should be calculated via: Current per phase = Power / (Line Voltage * Number of Phases). The "Line Voltage" used in the calculation is not the measured voltage, but the set voltage for the area (hence, 230 or 110 volt). The "Number of Phases" is the numberPhases from the ChargingSchedulePeriod. It is usually more convenient to use this for DC charging. Note that if numberPhases in a ChargingSchedulePeriod is absent, 3 SHALL be assumed.
+
+The A value represents Amperes (current). The amount of Ampere per phase, not the sum of all phases. It is usually more convenient to use this for AC charging.
+
+## 7.13. ChargingSchedule
+
+The ChargingSchedule class defines the structure for charging schedule information used in GetCompositeSchedule.conf and ChargingProfile contexts. This class provides detailed scheduling information that governs how charging power or current limits change over time.
+
+Charging schedule structure defines a list of charging periods, as used in: GetCompositeSchedule.conf and ChargingProfile.
+
+The ChargingSchedule class contains multiple fields with specific requirements. The duration field of type integer with cardinality 0..1 is optional and specifies the duration of the charging schedule in seconds. When the duration is left empty, the last period will continue indefinitely or until the end of the transaction when startSchedule is absent.
+
+The startSchedule field of type dateTime with cardinality 0..1 is optional and defines the starting point of an absolute schedule. When absent, the schedule will be relative to the start of charging. When ChargingSchedule is used as part of a GetCompositeSchedule.conf message, then this field must be omitted. The chargingRateUnit field of type ChargingRateUnitType with cardinality 1..1 is required and specifies the unit of measure in which the Limit values are expressed.
+
+The chargingSchedulePeriod field of type ChargingSchedulePeriod with cardinality 1..* is required and contains a list of ChargingSchedulePeriod elements defining maximum power or current usage over time. The startPeriod of the first ChargingSchedulePeriod SHALL always be 0.
+
+The minChargingRate field of type decimal with cardinality 0..1 is optional and specifies the minimum charging rate supported by the electric vehicle. The unit of measure is defined by the chargingRateUnit field. This parameter is intended for use by local smart charging algorithms to optimize power allocation in cases where a charging process is inefficient at lower charging rates. The field accepts at most one digit fraction, such as 8.1.
+
+## 7.14. ChargingSchedulePeriod
+
+The ChargingSchedulePeriod class defines the structure for individual time periods within a charging schedule. This class specifies the charging constraints that apply during specific time intervals.
+
+Charging schedule period structure defines a time period in a charging schedule, as used in: ChargingSchedule.
+
+The ChargingSchedulePeriod class contains three fields with specific requirements. The startPeriod field of type integer with cardinality 1..1 is required and indicates the start of the period in seconds from the start of schedule. The value of StartPeriod also defines the stop time of the previous period, creating a continuous timeline of charging constraints.
+
+The limit field of type decimal with cardinality 1..1 is required and specifies the charging rate limit during the schedule period, in the applicable chargingRateUnit, for example in Amperes or Watts. The field accepts at most one digit fraction, such as 8.1, providing precise control over charging rates.
+
+The numberPhases field of type integer with cardinality 0..1 is optional and specifies the number of phases that can be used for charging. When a number of phases is needed and this field is not specified, numberPhases equal to 3 will be assumed unless another number is explicitly given, ensuring consistent interpretation of multi-phase charging requirements.
+
+## 7.15. CiString20Type
+
+The CiString20Type represents a case insensitive string with a maximum length of 20 characters. This data type ensures consistent handling of short text fields while maintaining case insensitivity for improved user experience and system interoperability.
+
+The type specification indicates that the string is case insensitive, meaning that uppercase and lowercase letters are treated as equivalent during comparisons and processing. This characteristic is particularly important for identifier fields and configuration keys where case variations should not affect system behavior.
+
+## 7.16. CiString25Type
+
+The CiString25Type represents a case insensitive string with a maximum length of 25 characters. This data type provides slightly more capacity than CiString20Type while maintaining the same case insensitive characteristics.
+
+The type specification indicates that the string is case insensitive, ensuring consistent behavior across different implementations and user inputs. This data type is commonly used for serial numbers, model identifiers, and other medium-length text fields that require case insensitive handling.
+
+## 7.17. CiString50Type
+
+The CiString50Type represents a case insensitive string with a maximum length of 50 characters. This data type provides sufficient capacity for longer descriptive fields while maintaining case insensitive processing.
+
+The type specification indicates that the string is case insensitive, supporting consistent data handling regardless of case variations in user input or system processing. This data type is frequently used for configuration keys, descriptive names, and other fields requiring moderate text length.
+
+## 7.18. CiString255Type
+
+The CiString255Type represents a case insensitive string with a maximum length of 255 characters. This data type provides substantial capacity for longer text content while maintaining case insensitive characteristics.
+
+The type specification indicates that the string is case insensitive, ensuring uniform processing of text content regardless of case variations. This data type is typically used for vendor identifiers, file names, URLs, and other fields requiring significant text capacity.
+
+## 7.19. CiString500Type
+
+The CiString500Type represents a case insensitive string with a maximum length of 500 characters. This data type provides extensive capacity for longer text content and detailed information while maintaining case insensitive processing.
+
+The type specification indicates that the string is case insensitive, supporting consistent handling of substantial text content. This data type is commonly used for configuration values, detailed descriptions, and other fields requiring extensive text capacity.
+
+## 7.20. ClearCacheStatus
+
+The ClearCacheStatus enumeration defines the possible response values for ClearCache.req messages. This enumeration indicates whether the Charge Point successfully executed the cache clearing operation.
+
+The enumeration contains two values. The Accepted status indicates that the command has been executed successfully and the cache has been cleared. The Rejected status signifies that the command has not been executed and the cache remains unchanged, typically due to system constraints or operational conditions that prevent cache clearing.
